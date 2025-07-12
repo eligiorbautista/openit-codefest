@@ -17,6 +17,7 @@
   import ProfileAchievement from "$lib/components/ProfileAchievement.svelte";
   import { Mail } from "@lucide/svelte";
   import { onMount } from 'svelte';
+  import { formatDate } from "$lib/helpers/formats";
 
   export let data;
 
@@ -26,6 +27,8 @@
   let fileInput;
   let profileModal;
   let updating = false;
+  let showRewards = false;
+  let rewards=[];
 
   let userEmail = data.session?.user.email;
   let defaultUsername = userEmail.split("@");
@@ -73,7 +76,22 @@
     if(data.profile?.role_id){
         fetchRole(data.profile?.role_id);
     }
+    fetchRewards();
   })
+
+  const fetchRewards = async () =>{
+      const {data: rewardsData, error: rewardsDataError} = await data.supabase
+          .from("rewards")
+          .select('*')
+          .eq('is_archived', false)
+      
+      if(rewardsDataError){
+        console.log("Member error: ", rewardsDataError);
+      }
+
+      rewards = rewardsData ?? [];
+      console.log("Rewards fetched: ", rewards);
+  }
 
   const fetchRole = async (id) =>{
     if(id){
@@ -334,6 +352,37 @@
       }
     }
   }
+
+
+  const toggleShowRewards = () => {
+    showRewards = !showRewards;
+  };
+
+  const claimReward = async (reward_id) =>{
+    const selectedReward = rewards.filter(obj => obj.id == reward_id )      
+    console.log("Claim Reward of: ", selectedReward[0])
+    if(userData.current_points >= selectedReward[0].points_requirement){
+      const {data: updateProfileData , error: updateProfileDataError} = await data.supabase
+        .from('profiles')
+        .update({
+            current_points: userData.current_points - selectedReward[0].points_requirement
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if(updateProfileDataError){
+          toast.error("Failed to Profiles current points: ", updateProfileDataError);
+          return;
+      }
+
+      console.log("Profile successfully updated", updateProfileData);
+      toast.success("Successfully redeemed the reward")
+    }
+    else{
+      toast.error("You don't have enought points to redeem")
+    }
+  }
 </script>
 
 <svelte:head>
@@ -444,6 +493,50 @@
               <span class="font-medium text-gray-800">{userData.current_points || 0}</span>
             </div>
           </div>
+          <div class="bg-white rounded-lg border mb-4">
+            <button 
+                on:click={toggleShowRewards}
+                class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+                <div class="flex items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">List of Rewards</h2>
+                    <span class="ml-2 bg-green-100 text-green-800 text-sm px-2 py-1 rounded-full">{rewards.length}</span>
+                </div>
+                <svg 
+                    class="w-5 h-5 text-gray-400 transform transition-transform {showRewards ? 'rotate-180' : ''}"
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            {#if showRewards}
+                <div class="p-4 border-t">
+                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {#each rewards as reward}
+                                <div 
+                                    class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                                    on:click={() => claimReward(reward.id)}
+                                    on:keydown={(e) => e.key === 'Enter' && claimReward(reward.id)}
+                                    role="button"
+                                    tabindex="0"
+                                >
+                                    <div class="flex items-center">
+                                        <div>
+                                            <h3 class="font-medium text-gray-900">{reward.name}</h3>
+                                            <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-600">
+                                                {reward.points_requirement}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                </div>
+            {/if}
+        </div>
         </div>
       </div>
 
