@@ -3,6 +3,10 @@
   import { PUBLIC_APP_NAME } from '$env/static/public';
   import ProfileModal from '$lib/components/modals/ProfileModal.svelte';
   import { goto } from '$app/navigation';
+  import { supabase } from '@supabase/auth-ui-shared';
+  import { toast } from 'svelte-sonner';
+  import ProfileAchievement from '$lib/components/ProfileAchievement.svelte';
+  import { Mail } from '@lucide/svelte';
   
   export let data;
   
@@ -10,25 +14,32 @@
   let showAddressModal = false;
   let showBioModal = false;
   let fileInput;
+  let profileModal;
+  let updating = false;
+
+
+  let userEmail  = data.session?.user.email;
+  let defaultUsername = userEmail.split('@');
+  let a  = data.profile?.last_name;
+  console.log(defaultUsername);
+  
   
   // Use actual user data from session or provide defaults
   let userData = {
-    username: data.profile?.username || 'default_user',
-    name: data.session?.user?.user_metadata?.full_name || data.session?.user?.email || 'User',
+    last_name: data.profile?.last_name || '...',
+    first_name: data.profile?.first_name || '...',
+    username: data.profile?.username || defaultUsername[0],
+    name: data.session?.user?.user_metadata?.full_name || 'User',
     email: data.session?.user?.email || '',
     phone: data.session?.user?.user_metadata?.phone || 'Not provided',
     joinDate: data.session?.user?.created_at ? new Date(data.session.user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently',
-    address: {
-      street: '123 Sa Kanto',
-      city: 'Lucena City',
-      state: 'Quezon Province',
-      zipCode: '4301',
-      country: 'Philippines'
-    },
+    address: data.profile?.address || 'kantot street',
     bio: data.profile?.bio || 'Passionate software developer with expertise in modern web technologies. Enjoys building user-friendly applications and exploring new frameworks. When not coding, loves hiking and photography. Always eager to learn new technologies and contribute to meaningful projects that make a difference.',
-    profilePicture: data.session?.user?.user_metadata?.avatar_url || 'https://via.placeholder.com/150'
+    profilePicture: data.session?.user?.user_metadata?.profile_picture || `https://ui-avatars.com/api/?name=${data.profile.first_name }&background=random&bold=true`
   };
 
+  console.log("Session Data:" , data.session?.user);
+  console.log("Profile data:", userData);
   
   // Form data
   let editData = { ...userData };
@@ -48,10 +59,55 @@
     showBioModal = true;
   }
   
-  function handleModalSave(event) {
-    const data = event.detail;
-    userData = { ...userData, ...data };
-    closeModal();
+  async function handleModalSave(event){
+    updating = true;
+
+    try{
+      const userId = data.session?.user?.id;
+      const profileData = event.detail;
+
+      const { data: result, error } = await data.supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          last_name: profileData.last_name,
+          first_name: profileData.first_name,
+          username: profileData.username,
+          profile_picture: profileData.profilePicture,
+          address: profileData.address,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        })
+        .select()
+        .single();
+
+      if(error){
+        throw new Error(`Failed to update profile: ${error.message}`)
+      }
+
+      const {error: metaDataError}= await data.supabase.auth.updateUser({
+        data: {
+          full_name: `${profileData.first_name} ${profileData.last_name}`,
+          phone: profileData.phone
+        }
+      })
+
+      if(metaDataError){
+        console.warn('Failed to update user metadata:', metadataError);
+      }
+
+      userData = {...userData, ...profileData};
+      closeModal();
+      toast.success("User updated successfully!");
+    }
+    catch(error){
+      console.error("Error updating profile", error);
+      toast.error("Failed to update profile");
+    }
+    finally{
+      updating = false;
+    }
   }
   
   function closeModal() {
@@ -60,13 +116,148 @@
     showBioModal = false;
   }
 
-  function openProfilePictureUpload() {
+
+
+  async function handleFileUpload(event){
+    const {file} = event.detail;
+
+    if(!file) return;
+
+    updating = true;
+
+    try{
+      const userId = data.session.user.id;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+
+      toast.info("Uploading profile picture...");
+      
+      const { data: uploadData, error: uploadError } = await data.supabase.storage
+        .from('users-avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = data.supabase.storage
+        .from('users-avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await data.supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          profile_picture: publicUrl,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
+
+      if(updateError){
+        throw new Error(`Failed to update profile: ${updateError.message}`);
+      }
+
+      const { error: metadataError } = await data.supabase.auth.updateUser({
+        data: {
+          profile_picture: publicUrl
+        }
+      });
+
+      if(metadataError){
+        console.warn("Failed to update metadata: ", metadataError);
+      }
+
+      userData.profilePicture = publicUrl;
+      editData.profilePicture = publicUrl;
+
+      if (profileModal) {
+        profileModal.setUploadedUrl(publicUrl);
+      }
+
+      toast.success('Profile picture uploaded successfully!');
+    }
+    catch(error){
+      console.error("Error uploading file: ", error);
+      toast.error(`Upload failed: , ${error.message}`)
+    }
+  }
+
+   async function openProfilePictureUpload() {
     fileInput.click();
   }
 
-  function handleProfilePictureChange(event) {
+  async function handleProfilePictureChange(event) {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
+      updating = true;
+      try {
+        const userId = data.session.user.id;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        toast.info('Uploading profile picture...');
+
+        // Upload file to Supabase Storage
+        const { data: uploadData, error: uploadError } = await data.supabase.storage
+          .from('users-avatars')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          throw new Error(`Upload failed: ${uploadError.message}`);
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = data.supabase.storage
+          .from('users-avatars')
+          .getPublicUrl(filePath);
+
+        // Update profile in database
+        const { error: updateError } = await data.supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            profile_picture: publicUrl,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          });
+
+        if (updateError) {
+          throw new Error(`Failed to update profile: ${updateError.message}`);
+        }
+
+        // Update user metadata
+        const { error: metadataError } = await data.supabase.auth.updateUser({
+          data: {
+            profile_picture: publicUrl
+          }
+        });
+
+        if (metadataError) {
+          console.warn('Failed to update user metadata:', metadataError);
+        }
+
+        userData.profilePicture = publicUrl;
+        toast.success('Profile picture updated successfully!');
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        toast.error(`Upload failed: ${error.message}`);
+      } finally {
+        updating = false;
+      }
+    }
+  }
+
+  
       const reader = new FileReader();
       reader.onload = (e) => {
         userData.profilePicture = e.target.result;
@@ -121,7 +312,7 @@
           <div class="text-center">
             <div class="mb-6">
               <div class="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-svelte-100 mx-auto group">
-                <img src={userData.profilePicture} alt="Profile" class="w-full h-full object-cover" />
+                <img src={userData.profilePicture } alt="Profile" class="w-full h-full object-cover" />
                 
                 <div class="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer"
                      on:click={openProfilePictureUpload}
@@ -190,20 +381,30 @@
           
           <div class="grid sm:grid-cols-2 gap-4 sm:gap-6">
 
+            <!--Username section-->
             <div class="space-y-2">
-              <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Username</span>
+              <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Last Name</span>
               <div class="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
                 <User class="w-5 h-5 text-svelte-primary flex-shrink-0" />
-                <span class="text-gray-800 font-medium">{userData.username}</span>
+                <span class="text-gray-800 font-medium">{userData.last_name}</span>
               </div>
             </div>
             <div class="space-y-2">
-              <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Full Name</span>
+              <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">First Name</span>
               <div class="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
                 <User class="w-5 h-5 text-svelte-primary flex-shrink-0" />
-                <span class="text-gray-800 font-medium">{userData.name}</span>
+                <span class="text-gray-800 font-medium">{userData.first_name}</span>
               </div>
             </div>
+
+            <div class="space-y-2">
+              <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Email</span>
+              <div class="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
+                <Mail class="w-5 h-5 text-svelte-primary flex-shrink-0" />
+                <span class="text-gray-800 font-medium">{userData.email}</span>
+              </div>
+            </div>
+
             
             <div class="space-y-2">
               <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Phone</span>
@@ -223,6 +424,7 @@
           </div>
         </div>
         
+        <!-- Address Card -->
         <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl sm:text-2xl font-bold text-gray-800">Address</h3>
@@ -244,9 +446,10 @@
           </div>
         </div>
         
+        <!-- Bio Card -->
         <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-800">About Me</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-800">Achievements</h3>
             <button 
               on:click={openBioModal}
               class="p-2 text-gray-400 hover:text-svelte-primary hover:bg-svelte-50 rounded-lg transition-all duration-200"
@@ -255,11 +458,7 @@
             </button>
           </div>
           
-          <div class="p-4 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
-            <p class="text-gray-700 leading-relaxed">
-              {userData.bio}
-            </p>
-          </div>
+          <ProfileAchievement />
         </div>
       </div>
     </div>
