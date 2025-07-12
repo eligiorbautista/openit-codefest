@@ -9,15 +9,10 @@
   const dispatch = createEventDispatcher();
  
   $: modalData = {
-    name: data?.name || '',
+    last_name: data?.last_name || '',
+    first_name: data?.first_name || '',
     phone: data?.phone || '',
-    address: {
-      street: data?.address?.street || '',
-      city: data?.address?.city || '',
-      state: data?.address?.state || '',
-      zipCode: data?.address?.zipCode || '',
-      country: data?.address?.country || ''
-    },
+    address: data?.address || '',
     bio: data?.bio || '',
     profilePicture: data?.profilePicture || ''
   };
@@ -81,17 +76,32 @@
         <form on:submit|preventDefault={handleSubmit} class="space-y-6">
           {#if type === 'personal'}
             <div class="grid sm:grid-cols-2 gap-6">
-              <div class="space-y-2">
-                <label for="name-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Full Name</label>
+
+                <div class="space-y-2">
+                <label for="name-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Last Name</label>
                 <input 
                   id="name-input"
                   type="text" 
-                  bind:value={modalData.name}
+                  bind:value={modalData.last_name}
                   class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
-                  placeholder="Enter your full name"
+                  placeholder="Enter your last name"
                   required
                 />
               </div>
+
+
+                <div class="space-y-2">
+                <label for="name-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">First Name</label>
+                <input 
+                  id="name-input"
+                  type="text" 
+                  bind:value={modalData.first_name}
+                  class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
+                  placeholder="Enter your first name"
+                  required
+                />
+              </div>
+
               
               <div class="space-y-2">
                 <label for="phone-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Phone</label>
@@ -112,59 +122,9 @@
                 <input 
                   id="street-input"
                   type="text" 
-                  bind:value={modalData.address.street}
+                  bind:value={modalData.address}
                   class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
                   placeholder="Enter street address"
-                  required
-                />
-              </div>
-              
-              <div class="grid sm:grid-cols-3 gap-6">
-                <div class="space-y-2">
-                  <label for="city-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">City</label>
-                  <input 
-                    id="city-input"
-                    type="text" 
-                    bind:value={modalData.address.city}
-                    class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
-                    placeholder="Enter city"
-                    required
-                  />
-                </div>
-                
-                <div class="space-y-2">
-                  <label for="state-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">State</label>
-                  <input 
-                    id="state-input"
-                    type="text" 
-                    bind:value={modalData.address.state}
-                    class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
-                    placeholder="Enter state"
-                    required
-                  />
-                </div>
-                
-                <div class="space-y-2">
-                  <label for="zip-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">ZIP Code</label>
-                  <input 
-                    id="zip-input"
-                    type="text" 
-                    bind:value={modalData.address.zipCode}
-                    class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
-                    placeholder="Enter ZIP"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div class="space-y-2">
-                <label for="country-input" class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Country</label>
-                <input 
-                  id="country-input"
-                  type="text" 
-                  bind:value={modalData.address.country}
-                  class="w-full px-4 py-3 sm:px-5 sm:py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-svelte-primary focus:bg-white focus:ring-4 focus:ring-svelte-primary/10 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400"
-                  placeholder="Enter country"
                   required
                 />
               </div>

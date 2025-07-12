@@ -8,7 +8,7 @@ export async function load({ parent }) {
   }
 
   const { data: profile, error } = await supabase
-    .from('profile')
+    .from('profiles')
     .select('*')
     .eq('id', session.user.id)
     .single();
