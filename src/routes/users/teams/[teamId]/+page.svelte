@@ -15,6 +15,11 @@
     let teamProjects = [];
     let activeProjects = [];
     let archivedProjects = [];
+    let members = [];
+    let roleData = {
+        id: data.profile?.role_id,
+        name: '',
+    }
 
     // State for collapsible sections
     let showActiveProjects = true;
@@ -60,15 +65,48 @@
             console.log("archived projects: ", archivedProjects);
         }
     }
+    async function fetchTeamMembers(team_id){
+        const {data: membersData, error: membersDataError} = await data.supabase
+            .from("profiles")
+            .select('*')
+            .eq('team_id', team_id)
+            .select();
+        
+        if(membersDataError){
+            console.log("Member error: ", membersDataError);
+        }
 
-    
+        members = membersData ?? [];
+        console.log("membersData fetched: ", members);
+    }
+
+    const fetchRole = async (id) =>{
+    if(id){
+        const { data: rolesData, error: rolesDataError } = await data.supabase
+            .from('roles')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+            console.log("RolesDataFetched: ", rolesData)
+        if(!rolesDataError){
+            roleData.name = rolesData.name;
+        }
+        else{
+            console.log("rolesDataFetchError: ", rolesDataError)
+        }
+        }
+    }
+
 
     onMount(() => {
         teamId = $page.params.teamId;
         fetchProjectsByTeamId(teamId);
-
         fetchTeamByTeamId(teamId);
-        
+        fetchTeamMembers(teamId);
+        if(data.profile?.role_id){
+            fetchRole(data.profile?.role_id);
+        }
     });
 
     const handleProjectClick = (projectId) => {
@@ -126,16 +164,26 @@
                                 <div class="flex items-center text-sm text-gray-500 mt-1">
                                     <span>{currentTeam.team_lead}</span>
                                     <span class="mx-2">•</span>
-                                    <span>{currentTeam.members_count} members</span>
+                                    <span>{members.length} members</span>
                                 </div>
                             </div>
                         </div>
-                        <button
-                            on:click={handleCreateProject}
-                            class="bg-svelte-primary text-white px-4 py-2 rounded-lg hover:bg-svelte-700 transition-colors"
-                        >
-                            Create Project
-                        </button>
+                        <div>
+                            {#if roleData.name == 'team_leader'}
+                                <button
+                                    on:click={goto(`/users/tl/update/${teamId}`)}
+                                    class="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Edit Team
+                                </button>
+                            {/if}
+                            <button
+                                on:click={handleCreateProject}
+                                class="bg-svelte-primary text-white px-4 py-2 rounded-lg hover:bg-svelte-700 transition-colors"
+                            >
+                                Create Project
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -177,7 +225,7 @@
                     {#if showActiveProjects}
                         <div class="p-4 border-t">
                                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {#each projects as project}
+                                    {#each activeProjects as project}
                                         <div 
                                             class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                                             on:click={() => handleProjectClick(project.id)}
