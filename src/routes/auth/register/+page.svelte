@@ -12,12 +12,12 @@
     Check,
     Users,
     Crown,
+    Hash,
   } from "lucide-svelte";
   import { goto } from "$app/navigation";
   import { toast } from "svelte-sonner";
   import { onMount } from "svelte";
   import avatar from "daisyui/components/avatar/index.js";
-
 
   export let data;
 
@@ -37,6 +37,71 @@
   let agreeToTerms = false;
   let isLoading = false;
   let passwordStrength = 0;
+  let generatedTeamCode = "";
+  let showTeamCodeSuccess = false;
+  let previousRole = "";
+
+  // generate team code when role changes to team_leader
+  $: if (formData.teamRole !== previousRole) {
+    if (formData.teamRole === "team_leader") {
+      generateTeamCode();
+    } else {
+      generatedTeamCode = "";
+    }
+    previousRole = formData.teamRole;
+  }
+
+  function generateTeamCode() {
+    // generate 6 character team code
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let teamCode = "";
+    for (let i = 0; i < 6; i++) {
+      teamCode += characters.charAt(
+        Math.floor(Math.random() * characters.length)
+      );
+    }
+    generatedTeamCode = teamCode;
+  }
+
+  async function checkTeamCodeExists(teamCode) {
+    const { data: existingTeam, error } = await data.supabase
+      .from("teams")
+      .select("team_code")
+      .eq("team_code", teamCode)
+      .single();
+
+    return !error && existingTeam;
+  }
+
+  async function generateUniqueTeamCode() {
+    let isUnique = false;
+    let attempts = 0;
+    let teamCode = "";
+
+    while (!isUnique && attempts < 10) {
+      // generate 6 character team code
+      const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      teamCode = "";
+      for (let i = 0; i < 6; i++) {
+        teamCode += characters.charAt(
+          Math.floor(Math.random() * characters.length)
+        );
+      }
+
+      // check if team code already exists
+      const exists = await checkTeamCodeExists(teamCode);
+      if (!exists) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      throw new Error("Unable to generate unique team code. Please try again.");
+    }
+
+    return teamCode;
+  }
 
   $: {
     if (formData.password.length === 0) {
@@ -59,8 +124,6 @@
     formData.password === formData.confirmPassword &&
     formData.confirmPassword.length > 0;
 
-  
-  
   function togglePasswordVisibility(field) {
     if (field === "password") {
       showPassword = !showPassword;
@@ -85,13 +148,14 @@
     return texts[strength] || "";
   }
 
-  async function getRoles(){
-    const {data: rolesData, error: rolesError} = await data.supabase.from('roles').select(`*`)
+  async function getRoles() {
+    const { data: rolesData, error: rolesError } = await data.supabase
+      .from("roles")
+      .select(`*`);
 
-    if(rolesError){
+    if (rolesError) {
       console.log("Error: ", rolesError);
-    }
-    else{
+    } else {
       userRoles = rolesData ?? [];
       console.log("Fetched user roles", userRoles);
     }
@@ -99,24 +163,31 @@
 
   onMount(() => {
     getRoles();
-  })
-
+  });
 
   async function handleRegister(event) {
     event.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     if (!agreeToTerms) {
-      alert("Please agree to the terms and conditions");
+      toast.error("Please agree to the terms and conditions");
       return;
     }
+
     isLoading = true;
 
     try {
+      let finalTeamCode = "";
+
+      // generate unique team code for team leaders
+      if (formData.teamRole === "team_leader") {
+        finalTeamCode = await generateUniqueTeamCode();
+      }
+
       const { data: signUpData, error } = await data.supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -131,59 +202,70 @@
                 ? "d41c0b3c-578e-417d-9842-2d955fa8ec18"
                 : "f8ef63a0-79ce-4fd2-b832-259a45a8fe94",
             profile_picture: `https://ui-avatars.com/api/?name=${formData.firstName}+${formData.lastName}&background=random&bold=true`,
+            team_code: finalTeamCode, // store team code in user metadata
           },
         },
       });
-      if (error) toast.error("Registration failed: " + error.message);
-      else {
+
+      if (error) {
+        toast.error("Registration failed: " + error.message);
+      } else {
+        // create team entry if team leader
+        if (formData.teamRole === "team_leader" && signUpData.user) {
+          try {
+            const { data: teamData, error: teamError } = await data.supabase
+              .from("teams")
+              .insert([
+                {
+                  name: `${formData.firstName} ${formData.lastName}'s Team`,
+                  team_code: finalTeamCode,
+                },
+              ])
+              .select();
+
+            // update user profile with team_id
+            const { error: profileError } = await data.supabase
+              .from("profiles")
+              .update({ team_id: teamData[0].id })
+              .eq("id", signUpData.user.id);
+
+            if (teamError) {
+              console.error("Error creating team:", teamError);
+              toast.error(
+                "Account created but team setup failed. Please contact support."
+              );
+            } else if (profileError) {
+              console.error("Error updating profile:", profileError);
+              toast.error(
+                "Team created but profile update failed. Please contact support."
+              );
+            } else {
+              console.log("Team created successfully:", teamData);
+              generatedTeamCode = finalTeamCode;
+              showTeamCodeSuccess = true;
+            }
+          } catch (teamErr) {
+            console.error("Team creation error:", teamErr);
+            toast.error(
+              "Account created but team setup failed. Please contact support."
+            );
+          }
+        }
+
         toast.success(
           "Registration successful! Please check your email for verification."
         );
-        // // get userID eq email
-        // const { data: userData, error: userError } = await data.supabase
-        //   .from("profiles")
-        //   .select("id")
-        //   .eq("email", formData.email)
-        //   .single();
 
-        // if (userError) {
-        //   toast.error("Failed to retrieve user ID: " + userError.message);
-        // }
-
-        // // upload default avatar
-        // const { data: uploadData, error: uploadError } =
-        //   await data.supabase.storage
-        //     .from("users-avatars")
-        //     .upload(`public/${userData.id}/avatar.png`, new Blob(), {
-        //       upsert: false,
-        //       cacheControl: "3600",
-        //       contentType: "image/png",
-        //     });
-
-        // // get public url of the uploaded avatar
-        // const { publicURL, error: urlError } = data.supabase.storage
-        //   .from("users-avatars")
-        //   .getPublicUrl(`public/${userData.id}/avatar.png`);
-        // if (urlError) {
-        //   toast.error("Failed to get avatar URL: " + urlError.message);
-        // } else {
-        //   // update user profile with avatar URL
-        //   const { error: profileError } = await data.supabase
-        //     .from("profiles")
-        //     .update({ avatar_url: publicURL })
-        //     .eq("id", userData.id);
-
-        //   if (profileError) {
-        //     toast.error(
-        //       "Failed to update profile with avatar URL: " +
-        //         profileError.message
-        //     );
-        //   } else {
-        //     toast.success("Avatar uploaded and profile updated successfully!");
-        //   }
-        // }
+        if (formData.teamRole === "team_leader") {
+          setTimeout(() => {
+            toast.success(
+              `Your team code is: ${finalTeamCode}. Save this code!`
+            );
+          }, 1000);
+        }
       }
     } catch (err) {
+      console.error("Registration error:", err);
       toast.error("Registration failed. Please try again.");
     } finally {
       isLoading = false;
@@ -215,6 +297,28 @@
         Create your account and start your journey with us
       </p>
     </div>
+
+    <!-- Success Message for Team Code -->
+    {#if showTeamCodeSuccess}
+      <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-green-100 rounded-lg">
+            <Hash class="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <h3 class="font-semibold text-green-800">Team Code Generated!</h3>
+            <p class="text-green-700">
+              Your team code is: <span class="font-mono font-bold text-lg"
+                >{generatedTeamCode}</span
+              >
+            </p>
+            <p class="text-sm text-green-600 mt-1">
+              Save this code - your team members will need it to join your team!
+            </p>
+          </div>
+        </div>
+      </div>
+    {/if}
 
     <!-- Registration Form -->
     <div
@@ -276,8 +380,7 @@
         <div class="space-y-2">
           <label
             class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide"
-            for="
-            teamRole"
+            for="teamRole"
           >
             Team Role
           </label>
@@ -330,6 +433,25 @@
             </label>
           </div>
         </div>
+
+        <!-- Team Code Preview for Team Leaders -->
+        {#if formData.teamRole === "team_leader" && generatedTeamCode}
+          <div class="p-3 bg-svelte-50 border border-svelte-800 rounded-xl">
+            <div class="flex items-center gap-2">
+              <Hash class="w-4 h-4 text-svelte-900" />
+              <span class="text-sm font-medium text-svelte-900"
+                >Your team code will be:</span
+              >
+              <span
+                class="font-mono font-bold text-svelte-900 bg-svelte-100 px-2 py-1 rounded"
+                >{generatedTeamCode}</span
+              >
+            </div>
+            <p class="text-xs text-svelte-600 mt-1">
+              Team members will use this code to join your team.
+            </p>
+          </div>
+        {/if}
 
         <!-- Contact Fields -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">

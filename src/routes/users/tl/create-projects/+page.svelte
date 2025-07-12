@@ -9,6 +9,7 @@
   export let data;
   const { session, supabase } = data;
 
+  const sampleTeamName = "Sample Name";
   const team_id = "8b2ddea4-30a4-4640-97b4-26ba8a1daf29";
 
   let isSubmitting = false;
