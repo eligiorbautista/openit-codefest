@@ -30,7 +30,7 @@
   let userEmail = data.session?.user.email;
   let defaultUsername = userEmail.split("@");
   let a = data.profile?.last_name;
-  console.log(defaultUsername);
+  console.log("DATA FECTCHED: ",data);
 
   // Use actual user data from session or provide defaults
   let userData = {
@@ -40,6 +40,7 @@
     name: data.session?.user?.user_metadata?.full_name || "User",
     email: data.session?.user?.email || "",
     phone: data.session?.user?.user_metadata?.phone || "Not provided",
+    current_points: data.profile?.current_points || 0,
     joinDate: data.session?.user?.created_at
       ? new Date(data.session.user.created_at).toLocaleDateString("en-US", {
           year: "numeric",
@@ -409,6 +410,10 @@
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Team Code</span>
               <span class="font-medium text-gray-800">{teamData.team_code}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-600">User Points</span>
+              <span class="font-medium text-gray-800">{userData.current_points || 0}</span>
             </div>
           </div>
         </div>
