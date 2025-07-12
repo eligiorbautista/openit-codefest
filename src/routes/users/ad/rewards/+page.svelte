@@ -42,10 +42,6 @@
     }
     
 
-    function editReward(reward_id){
-        goto(`/users/ad/rewards/update/${reward_id}`);
-    }
-
     onMount(() => {
         fetchRewards();
     })
@@ -53,13 +49,23 @@
 
 <div>
     <h1>Rewards</h1>
-
-    <button
-        on:click={() => goto('/users/ad/rewards/create')}
-    >create reward</button>
     {#each rewards as reward}
-        <div class="p-4 mb-5 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
-            <Trophy />
+        <div class="p-4 mb-5 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200"
+              on:click={() => goto(`/users/ad/rewards/update/${reward.id}`)}
+              on:keydown={(e) =>
+                e.key === "Enter" && goto(`/users/ad/rewards/update/${reward.id}`)}
+              role="button"
+              tabindex="0"
+        >
+            {#if reward.reward_logo}
+              <div class="avatar flex justify-center">
+                <div class="w-24 rounded-full">
+                  <img src={reward.reward_logo} alt="error"/>
+                </div>
+              </div>
+            {:else}
+              <Trophy />
+            {/if}
             <p class="text-gray-700 font-bold leading-relaxed">
                     {reward.name}
             </p>
@@ -69,19 +75,21 @@
                <p class="text-gray-700 leading-relaxed">
                     {reward.points_requirement}
             </p>
-
-            <button
-                on:click={() => editReward(reward.id)}
-                class="rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                Edit
-            </button>
-
-            <button
-                on:click={() => deleteReward(reward.id)}
-                class="rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-                Delete
-            </button>
         </div>
     {/each}
+
+    <button 
+        type="button" 
+        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+        on:click={() => goto('/users/ad')}
+      >
+        Back
+    </button>
+    <button 
+        type="button" 
+        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+        on:click={() => goto('/users/ad/rewards/create')}
+      >
+        Create Rewards
+    </button>
 </div>

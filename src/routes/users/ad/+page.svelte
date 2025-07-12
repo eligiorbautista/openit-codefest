@@ -12,4 +12,11 @@
     >
         Go to Achievements
     </button>
+    <button 
+        class="btn btn-secondary" 
+        type="button" 
+        on:click={() => goto('/users/ad/rewards')}
+    >
+        Go to Rewards
+    </button>
 </div>

@@ -13,13 +13,12 @@
     let achievements =  [];
     let fileInput;
     let uploading =  false;
-    let isLoading = false;
     let hasBadgeLogo = false;
     let selectedFile = null;
 
     let formData = {
-        name : achievements.name || '',
-        description: achievements.description || '',
+        name : '',
+        description: '',
         badge_logo : '',
     }
     
@@ -47,7 +46,7 @@
             const fileName = `${Date.now()}.${fileExt}`;
             const filePath = `${achievement_id}/${fileName}`;
 
-            toast.info('Uploading profile picture...');
+            toast.info('Uploading Achivement logo...');
 
             const { data: uploadData, error: uploadError } = await data.supabase.storage
             .from('achievements-badges')
@@ -93,7 +92,7 @@
     async function upsertAchievement(event){
         event.preventDefault();
 
-        isLoading = true;
+        uploading = true;
         try{
             const {data: upsertAchievementsData , error: upsertAchievementsError} = await data.supabase
                 .from('achievements')
@@ -132,6 +131,11 @@
                 toast.success("Achievement without image upserted");
             }
 
+            let formData = {
+                name : '',
+                description: '',
+                badge_logo : '',
+            }
             toast.success("Achievement successfully upserted ");
         }
         catch(error){
@@ -139,7 +143,7 @@
             toast.error("Failed to upsert achievement");
         }
         finally{
-            isLoading = false;
+            uploading = false;
         }
     }
 
@@ -231,10 +235,11 @@
     >
         Cancel
     </button>
-
+    
     <button 
         class="btn btn-primary" 
         type="submit"
+        disabled={uploading}
     >
         Create
     </button>
