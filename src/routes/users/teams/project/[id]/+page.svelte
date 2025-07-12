@@ -8,7 +8,7 @@
     import { page } from '$app/stores';
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
+    import { toast } from "svelte-sonner";
 
     export let data;
 
@@ -23,7 +23,7 @@
     let formData = {
         name: '',
         description: '',
-        project_id: ''
+        project_id: '',
     }
 
     const boardButton = document.getElementById('board-button');
@@ -41,7 +41,7 @@
         const {data: projectDetailsData, error: projectDetailsError} = await data.supabase
             .from('projects')
             .select('*')
-            .eq('team_id', teamId)
+            .eq('id', projectId)
             .select()
             .single();
         
@@ -67,6 +67,35 @@
 
         projectBoards = projectBoardsData ?? [];
         console.log("Fetched boards: ", projectBoards);
+    }
+
+    async function fetchProjectCards(){
+        const{data: projectCardsData, error: projectCardsError} = await data.supabase
+            .from('projectCards')
+            .select(`
+                id,
+                name,
+                description,
+                is_approved,
+                is_archived,
+                project_id, 
+                taskCategories (
+                    id,
+                    name
+                ),
+                projectBoards(
+                    id,
+                    name,
+                    description
+                )
+            `)
+
+        if(projectCardsError){
+            console.log("Error fetching boards: ", projectCardsError);
+        }
+
+        projectCards = projectCardsData ?? [];
+        console.log("Fetched cards: ", projectCards);
     }
 
     async function createProjectBoard(){
@@ -98,13 +127,37 @@
         }
     }
 
+    async function approveCard(card_id, profile_id){
+        const{data: approveCardData, error: approveCardError} = await data.supabase
+            .from('projectCards')
+            .update({
+                is_approved : true
+            })
+
+        if(approveCardError){
+            console.log('error approving card: ', approveCardError)
+        }
+
+        if(approveCardData){
+            const {data: addPointData, error: approveCardError} = await data.supabase
+                .from('profiles')
+                .update()
+        }
+    }
+
     onMount(() => {
         projectId = $page.params.id;
         console.log("Project ID:", projectId);
 
         fetchProjectBoards(projectId);
 
+        fetchProjectCards()
+
+
         fetchProjectDetails();
+
+        // fetchProjectCards();
+
         
         if (projectId) {
             currentProject = mockProjects.find(project => project.id == projectId);
@@ -120,7 +173,7 @@
     });
 
     const getCardsForBoard = (boardId) => {
-        return projectCards.filter(card => card.project_board_id == boardId);
+        return projectCards.filter(card => card.projectBoards?.id == boardId);
     };
 
     const goBack = () => {
@@ -284,7 +337,7 @@
 
                   <!-- Cards Container -->
                   <div class="space-y-3">
-                    {#each getCardsForBoard(board.id) as card}
+                    {#each projectCards as card}
                       <div
                         class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                       >
@@ -325,7 +378,7 @@
                             <span
                               class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                             >
-                              Task #{card.id}
+                              Category {card.taskCategories?.name} 
                             </span>
                           </div>
 
