@@ -20,6 +20,10 @@
     Shield,
     Users,
     Crown,
+    Award,
+    Gift,
+    Tags,
+    FolderPlus,
   } from "lucide-svelte";
   import { page } from "$app/stores";
   import { browser } from "$app/environment";
@@ -106,30 +110,72 @@
                 Teams
               </a>
 
-                            <!-- Role-based navigation -->
+              <!-- Role-based navigation -->
               {#if session && userRole}
                 {#if userIsAdmin}
-                  <a
-                    href="/users/ad"
-                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                  <div class="relative dropdown dropdown-hover">
+                    <div tabindex="0" role="button" class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
                       .url.pathname.startsWith('/users/ad')
                       ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                      : 'pb-1'}"
-                  >
-                    Admin
-                  </a>
+                      : 'pb-1'} cursor-pointer">
+                      Admin
+                    </div>
+                    <ul class="dropdown-content menu bg-white rounded-lg shadow-lg border border-gray-200 w-48 p-2 mt-1 z-50">
+                      <li>
+                        <a href="/users/ad" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Dashboard
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/users/ad/achievements" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Achievements
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/users/ad/rewards" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Rewards
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/users/ad/task-categories" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Task Categories
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
                 {/if}
                 
                 {#if userIsTeamLeader || userIsAdmin}
-                  <a
-                    href="/users/tl"
-                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                  <div class="relative dropdown dropdown-hover">
+                    <div tabindex="0" role="button" class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
                       .url.pathname.startsWith('/users/tl')
                       ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                      : 'pb-1'}"
-                  >
-                    Team Leader
-                  </a>
+                      : 'pb-1'} cursor-pointer">
+                      Team Leader
+                    </div>
+                    <ul class="dropdown-content menu bg-white rounded-lg shadow-lg border border-gray-200 w-48 p-2 mt-1 z-50">
+                      <li>
+                        <a href="/users/tl" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Dashboard
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/users/tl/create-projects" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Create Projects
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/users/tl/manage-members" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Manage Members
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/users/tl/update-projects" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
+                          Update Projects
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
                 {/if}
                 
                 {#if userIsMember || userIsTeamLeader || userIsAdmin}
@@ -160,7 +206,7 @@
                     <img
                       class="w-8 h-8 rounded-full object-cover"
                       alt="User avatar"
-                      src={session.user?.user_metadata?.profile_picture || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
+                      src={session.user?.user_metadata?.profile_picture || "/default-avatar.png"} 
                     />
                   </div>
                   <!-- USER MENU -->
@@ -363,45 +409,120 @@
               Teams
             </a>
 
-                        <!-- Role-based navigation -->
+            <!-- Role-based navigation -->
             {#if session && userRole}
               {#if userIsAdmin}
-                <a
-                  href="/users/ad"
-                  class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                    .url.pathname.startsWith('/users/ad')
-                    ? 'bg-svelte-primary text-white'
-                    : 'text-gray-700 hover:bg-svelte-50'}"
-                >
-                  <Shield class="w-5 h-5" />
-                  Admin
-                </a>
+                <div class="space-y-1">
+                  <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Admin
+                  </div>
+                  <a
+                    href="/users/ad"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname === '/users/ad'
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Shield class="w-5 h-5" />
+                    Dashboard
+                  </a>
+                  <a
+                    href="/users/ad/achievements"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/ad/achievements')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Award class="w-5 h-5" />
+                    Achievements
+                  </a>
+                  <a
+                    href="/users/ad/rewards"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/ad/rewards')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Gift class="w-5 h-5" />
+                    Rewards
+                  </a>
+                  <a
+                    href="/users/ad/task-categories"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/ad/task-categories')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Tags class="w-5 h-5" />
+                    Task Categories
+                  </a>
+                </div>
               {/if}
               
               {#if userIsTeamLeader || userIsAdmin}
-                <a
-                  href="/users/tl"
-                  class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                    .url.pathname.startsWith('/users/tl')
-                    ? 'bg-svelte-primary text-white'
-                    : 'text-gray-700 hover:bg-svelte-50'}"
-                >
-                  <Crown class="w-5 h-5" />
-                  Team Leader
-                </a>
+                <div class="space-y-1">
+                  <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Team Leader
+                  </div>
+                  <a
+                    href="/users/tl"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname === '/users/tl'
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Crown class="w-5 h-5" />
+                    Dashboard
+                  </a>
+                  <a
+                    href="/users/tl/create-projects"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/tl/create-projects')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <FolderPlus class="w-5 h-5" />
+                    Create Projects
+                  </a>
+                  <a
+                    href="/users/tl/manage-members"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/tl/manage-members')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Users class="w-5 h-5" />
+                    Manage Members
+                  </a>
+                  <a
+                    href="/users/tl/update-projects"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/tl/update-projects')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <Settings class="w-5 h-5" />
+                    Update Projects
+                  </a>
+                </div>
               {/if}
               
               {#if userIsMember || userIsTeamLeader || userIsAdmin}
-                <a
-                  href="/users/me"
-                  class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                    .url.pathname.startsWith('/users/me')
-                    ? 'bg-svelte-primary text-white'
-                    : 'text-gray-700 hover:bg-svelte-50'}"
-                >
-                  <User class="w-5 h-5" />
-                  My Area
-                </a>
+                <div class="space-y-1">
+                  <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    My Area
+                  </div>
+                  <a
+                    href="/users/me"
+                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                      .url.pathname.startsWith('/users/me')
+                      ? 'bg-svelte-primary text-white'
+                      : 'text-gray-700 hover:bg-svelte-50'}"
+                  >
+                    <User class="w-5 h-5" />
+                    My Area
+                  </a>
+                </div>
               {/if}
             {/if}
           </nav>
@@ -410,7 +531,7 @@
             <!-- Divider -->
             <div class="border-t border-svelte-100 my-6 mx-6"></div>
 
-            <!-- User navigation (when logged in) -->
+            <!-- User navigation -->
             <nav class="space-y-1 px-6">
               <!-- <a
                 href="/account/profile"
@@ -437,7 +558,7 @@
             <!-- Divider -->
             <div class="border-t border-svelte-100 my-6 mx-6"></div>
 
-            <!-- Auth links (when not logged in) -->
+            <!-- Auth links  -->
             <nav class="space-y-1 px-6">
               <a
                 href="/"
@@ -463,7 +584,7 @@
           {/if}
         </div>
 
-        <!-- Logout (only when logged in) -->
+        <!-- Logout -->
         {#if session}
           <div class="border-t border-svelte-100 p-6">
             <button

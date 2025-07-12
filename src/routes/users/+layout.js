@@ -1,34 +1,9 @@
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 export async function load({ parent }) {
-  const { supabase, session } = await parent();
+  const { supabase, session, profile } = await parent();
 
-  if (!session) {
-    return { 
-      supabase,
-      session: null,
-      profile: null 
-    };
-  }
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select(`
-      *,
-      role_id:roles(*)
-    `)
-    .eq('id', session.user.id)
-    .single();
-
-  if (error) {
-    console.error('Error fetching profile:', error);
-    return { 
-      supabase,
-      session,
-      profile: null 
-    };
-  }
-
+  // Profile data is now loaded in the root layout, so we just pass it through
   return { 
     supabase,
     session,

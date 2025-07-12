@@ -32,11 +32,30 @@ export const load = async ({ fetch, data, depends, url }) => {
     if (!isPublicRoute && !session) {
         if (browser) {
             goto('/');
-            return { supabase, session: null };
+            return { supabase, session: null, profile: null };
         } else {
             throw redirect(302, '/');
         }
     }
 
-    return { supabase, session };
+    // Load user profile data if session exists
+    let profile = null;
+    if (session) {
+        const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select(`
+                *,
+                role_id:roles(*)
+            `)
+            .eq('id', session.user.id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching profile:', error);
+        } else {
+            profile = profileData;
+        }
+    }
+
+    return { supabase, session, profile };
 };
