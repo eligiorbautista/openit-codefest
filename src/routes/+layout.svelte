@@ -8,7 +8,7 @@
     Facebook,
     Twitter,
     Github,
-    Home,
+    LayoutDashboard,
     Info,
     Mail,
     User,
@@ -67,7 +67,7 @@
               </label>
               <!-- BRAND -->
               <button
-                onclick={() => goto("/home")}
+                onclick={() => goto("/dashboard")}
                 class="flex items-center gap-2 text-xl font-semibold text-svelte-primary hover:text-svelte-700 transition-colors"
               >
                 <img src="/svelte.png" alt="App Logo" class="w-6 h-6" />
@@ -78,13 +78,13 @@
             <!-- Desktop Navigation -->
             <nav class="hidden lg:flex items-center space-x-8">
               <a
-                href="/home"
+                href="/dashboard"
                 class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                  .url.pathname === '/home'
+                  .url.pathname === '/dashboard'
                   ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
                   : 'pb-1'}"
               >
-                Home
+                Dashboard
               </a>
 
               <a
@@ -303,14 +303,14 @@
         <div class="flex-1 py-6">
           <nav class="space-y-1 px-6">
             <a
-              href="/home"
+              href="/dashboard"
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                .url.pathname === '/home'
+                .url.pathname === '/dashboard'
                 ? 'bg-svelte-primary text-white'
                 : 'text-gray-700 hover:bg-svelte-50'}"
             >
-              <Home class="w-5 h-5" />
-              Home
+              <LayoutDashboard class="w-5 h-5" />
+              Dashboard
             </a>
             <a
               href="/users/teams"

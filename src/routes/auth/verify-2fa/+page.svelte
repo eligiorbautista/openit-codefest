@@ -89,7 +89,7 @@
       }
 
       toast.success('2FA verification successful!');
-      goto('/home');
+      goto('/dashboard');
     } catch (err) {
       toast.error('2FA verification failed. Please try again.');
     } finally {

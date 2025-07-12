@@ -35,4 +35,4 @@ export const mockProjectCards = [
         is_approved: false,
         is_archived: false,
     },
-]
+]   

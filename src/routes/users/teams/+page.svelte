@@ -1,97 +1,122 @@
 <script>
     import { PUBLIC_APP_NAME } from "$env/static/public";
     import { formatDate } from "$lib/helpers/formats";
-    import { mockProjects } from  "$lib/mockProjects";
-    import { goto } from "$app/navigation"; 
-    
-    const sampleTeamName = "Sample Name"
+    import { mockTeams } from "$lib/mockTeams";
+    import { mockProjects } from "$lib/mockProjects";
+    import { goto } from "$app/navigation";
 
+    // Get projects count for each team
+    const getProjectsCountForTeam = (teamId) => {
+        return mockProjects.filter(project => project.team_id === teamId).length;
+    };
 
-    // State component of collapse
-    let onArchivedProjects = true;
-    let onActiveProjects = true;
+    // Get active projects count for each team
+    const getActiveProjectsCountForTeam = (teamId) => {
+        return mockProjects.filter(project => project.team_id === teamId && !project.is_archived).length;
+    };
 
-    const toggleOnArchivedProjects = async () =>{
-        onArchivedProjects = !onArchivedProjects;
-    }
+    const handleTeamClick = (teamId) => {
+        goto(`/users/teams/${teamId}`);
+    };
 
-    const toggleOnActiveProjects = async () =>{
-        onActiveProjects = !onActiveProjects;
-    }
+    const handleCreateProject = () => {
+        goto('/users/tl/create-projects');
+    };
 </script>
 
 <svelte:head>
-    <title>Projects - {PUBLIC_APP_NAME}</title>
+    <title>Teams - {PUBLIC_APP_NAME}</title>
 </svelte:head>
 
-<div>
-    <div>
-        Team {sampleTeamName}
-    </div>
-    <div>
-        <h1>
-            Projects
-        </h1>
-        <button onclick={toggleOnActiveProjects} class="hs-collapse-toggle py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none" id="hs-basic-collapse" aria-expanded="false" aria-controls="hs-basic-collapse-heading" data-hs-collapse="#hs-basic-collapse-heading">
-            Active Projects
-            <svg class="hs-collapse-open:rotate-180 shrink-0 size-4 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6"></path>
-            </svg>
-        </button>
-        <div>
-            {#if onActiveProjects}
-                <div class="grid grid-flow-row-dense grid-cols-4 grid-rows-3 gap-8 mt-4">
-                    {#each mockProjects as project}
-                        {#if project.is_archived}
-                            <div class="card lg:card-side bg-base-100 shadow-sm">
-                                <figure>
-                                    <img
-                                    src="https://img.daisyui.com/images/stock/photo-1494232410401-ad00d5433cfa.webp"
-                                    alt="Album" />
-                                </figure>
-                                <div class="card-body">
-                                    <h2 class="card-title">{project.name}</h2>
-                                    <h4>{formatDate(project.created_at)}</h4>
-                                    <p>{project.description}</p>
-                                    <div class="card-actions justify-end">
-                                        <button class="btn btn-primary" onclick={()=> goto(`/users/teams/project/${project.id}`)}>View</button>
-                                    </div>
-                                </div>
-                            </div>
-                        {/if}
-                    {/each}
+<div class="min-h-screen bg-gray-50 p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Teams</h1>
+                    <p class="text-gray-600">Browse and manage your teams</p>
                 </div>
-            {/if}
-        </div>
-        <button onclick={toggleOnArchivedProjects} class="hs-collapse-toggle py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none" id="hs-basic-collapse" aria-expanded="false" aria-controls="hs-basic-collapse-heading" data-hs-collapse="#hs-basic-collapse-heading">
-            Archived Projects
-            <svg class="hs-collapse-open:rotate-180 shrink-0 size-4 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6"></path>
-            </svg>
-        </button>
-        <div>
-            {#if onArchivedProjects}
-                <div class="grid grid-flow-row-dense grid-cols-4 grid-rows-3 gap-8 mt-4">
-                    {#each mockProjects as project}
-                        {#if !project.is_archived}
-                            <div class="card lg:card-side bg-base-100 shadow-sm">
-                                <figure>
-                                    <img
-                                    src="https://img.daisyui.com/images/stock/photo-1494232410401-ad00d5433cfa.webp"
-                                    alt="Album" />
-                                </figure>
-                                <div class="card-body">
-                                    <h2 class="card-title">New album is released!</h2>
-                                    <p>Click the button to listen on Spotiwhy app.</p>
-                                    <div class="card-actions justify-end">
-                                        <button class="btn btn-primary" onclick={()=> goto(`/users/teams/project/${project.id}`)} >View</button>
-                                    </div>
-                                </div>
-                            </div>
-                        {/if}
-                    {/each}
+                <div class="flex gap-3">
+                    <button
+                        on:click={handleCreateProject}
+                        class="bg-svelte-primary text-white px-4 py-2 rounded-lg hover:bg-svelte-700 transition-colors"
+                    >
+                        Create Project
+                    </button>
+                    <div class="bg-white rounded-lg px-3 py-2 border">
+                        <span class="text-sm text-gray-500">Total: {mockTeams.length}</span>
+                    </div>
                 </div>
-            {/if}
+            </div>
         </div>
+
+        <!-- Teams Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {#each mockTeams as team}
+                <div 
+                    class="bg-white rounded-lg border hover:shadow-md transition-shadow cursor-pointer p-4"
+                    on:click={() => handleTeamClick(team.id)}
+                    on:keydown={(e) => e.key === 'Enter' && handleTeamClick(team.id)}
+                    role="button"
+                    tabindex="0"
+                >
+                    <!-- Team Header -->
+                    <div class="flex items-center mb-3">
+                        <div class="w-12 h-12 rounded-lg overflow-hidden border flex-shrink-0">
+                            <img 
+                                src={team.team_logo} 
+                                alt="{team.name} logo" 
+                                class="w-full h-full object-cover"
+                            />
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="font-semibold text-gray-900">{team.name}</h3>
+                            <p class="text-sm text-gray-500">{team.team_lead}</p>
+                        </div>
+                    </div>
+
+                    <!-- Team Description -->
+                    <p class="text-sm text-gray-600 mb-3">{team.description}</p>
+
+                    <!-- Team Stats -->
+                    <div class="flex justify-between text-sm">
+                        <div>
+                            <span class="font-medium text-gray-900">{team.members_count}</span>
+                            <span class="text-gray-500">members</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-svelte-primary">{getProjectsCountForTeam(team.id)}</span>
+                            <span class="text-gray-500">projects</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-green-600">{getActiveProjectsCountForTeam(team.id)}</span>
+                            <span class="text-gray-500">active</span>
+                        </div>
+                    </div>
+
+                    <!-- Created Date -->
+                    <div class="mt-3 pt-3 border-t text-xs text-gray-500">
+                        Created {formatDate(team.created_at)}
+                    </div>
+                </div>
+            {/each}
+        </div>
+
+        <!-- Empty State -->
+        {#if mockTeams.length === 0}
+            <div class="text-center py-12">
+                <div class="text-gray-400 mb-4">
+                    <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No teams found</h3>
+                <p class="text-gray-500 mb-4">Get started by creating your first team.</p>
+                <button class="bg-svelte-primary text-white px-4 py-2 rounded-lg hover:bg-svelte-700 transition-colors">
+                    Create Team
+                </button>
+            </div>
+        {/if}
     </div>
 </div>

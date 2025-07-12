@@ -1,8 +1,9 @@
 // this will run before layout setup
-import { goto } from "$app/navigation";
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from "$env/static/public";
 import { createBrowserClient, isBrowser, parse } from "@supabase/ssr";
 import { redirect } from '@sveltejs/kit';
+import { goto } from '$app/navigation';
+import { browser } from '$app/environment';
 
 export const ssr = false;
 
@@ -22,15 +23,19 @@ export const load = async ({ fetch, data, depends, url }) => {
         '/auth/verify-otp',     
         '/forgot-password',     
         '/reset-password',  
-        '/home',   
+        '/dashboard',   
     ];
 
     const isPublicProfileRoute = url.pathname.startsWith('/profile/');
 
     const isPublicRoute = publicRoutes.includes(url.pathname) || isPublicProfileRoute;
     if (!isPublicRoute && !session) {
-        throw redirect(302, '/');
-        goto('/');
+        if (browser) {
+            goto('/');
+            return { supabase, session: null };
+        } else {
+            throw redirect(302, '/');
+        }
     }
 
     return { supabase, session };
