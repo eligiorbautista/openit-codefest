@@ -10,9 +10,13 @@
         User,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
 
     export let data;
     let { supabase, session } = data;
+
+    
+
 </script>
 
 <svelte:head>
@@ -30,8 +34,10 @@
             </h1>
 
             <p class="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-                You're now logged in and ready to explore all the features we
-                have to offer. Let's get started on your journey with us!
+                {session
+                    ? `Hello, ${session.user.email}!`
+                    : "Your one-stop solution for all your needs. Explore our features and get started today!"
+                }
             </p>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">

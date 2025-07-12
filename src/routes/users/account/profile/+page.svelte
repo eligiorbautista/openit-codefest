@@ -1,5 +1,5 @@
 <script>
-  import { User, Phone, Calendar, MapPin, Edit, Shield, Settings, Camera } from 'lucide-svelte';
+  import { User, Phone, Calendar, MapPin, Edit, Shield, Settings, Camera, Share2 } from 'lucide-svelte';
   import { PUBLIC_APP_NAME } from '$env/static/public';
   import ProfileModal from '$lib/components/modals/ProfileModal.svelte';
   import { goto } from '$app/navigation';
@@ -74,6 +74,22 @@
       reader.readAsDataURL(file);
     }
   }
+
+  function shareProfile() {
+    const profileUrl = `${window.location.origin}/profile/${encodeURIComponent(userData.email)}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `${userData.name}'s Profile - ${PUBLIC_APP_NAME}`,
+        text: `Check out ${userData.name}'s profile on ${PUBLIC_APP_NAME}`,
+        url: profileUrl
+      });
+    } else {
+      navigator.clipboard.writeText(profileUrl).then(() => {
+        alert('Profile URL copied to clipboard!');
+      });
+    }
+  }
 </script>
 
 <svelte:head>
@@ -107,7 +123,6 @@
               <div class="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-svelte-100 mx-auto group">
                 <img src={userData.profilePicture} alt="Profile" class="w-full h-full object-cover" />
                 
-                <!-- Edit overlay -->
                 <div class="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer"
                      on:click={openProfilePictureUpload}
                      on:keydown={(e) => e.key === 'Enter' && openProfilePictureUpload()}
@@ -122,8 +137,16 @@
             <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{userData.name}</h2>
             <p class="text-gray-600 mb-6">Software Developer</p>
             
-            <div>
-              <button class="btn btn-md sm:btn-lg bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-svelte-primary rounded-lg sm:rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 font-semibold w-full flex items-center justify-center gap-2">
+            <div class="space-y-3">
+              <button 
+                on:click={shareProfile}
+                class="w-full bg-gradient-to-r from-svelte-primary to-svelte-secondary text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                <Share2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                <span class="text-sm sm:text-base">Share Profile</span>
+              </button>
+              
+              <button class="w-full bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-svelte-primary rounded-lg sm:rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 font-semibold flex items-center justify-center gap-2">
                 <Settings class="w-4 h-4 sm:w-5 sm:h-5" />
                 <span class="text-sm sm:text-base">Settings</span>
               </button>
@@ -131,7 +154,6 @@
           </div>
         </div>
 
-        <!-- Quick Stats Card -->
         <div class="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
           <div class="space-y-4">
@@ -154,9 +176,7 @@
         </div>
       </div>
       
-      <!-- Profile Information -->
       <div class="lg:col-span-2 space-y-6">
-        <!-- Personal Information Card -->
         <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl sm:text-2xl font-bold text-gray-800">Personal Information</h3>
@@ -170,7 +190,6 @@
           
           <div class="grid sm:grid-cols-2 gap-4 sm:gap-6">
 
-            <!--Username section-->
             <div class="space-y-2">
               <span class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Username</span>
               <div class="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
@@ -204,7 +223,6 @@
           </div>
         </div>
         
-        <!-- Address Card -->
         <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl sm:text-2xl font-bold text-gray-800">Address</h3>
@@ -226,7 +244,6 @@
           </div>
         </div>
         
-        <!-- Bio Card -->
         <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl sm:text-2xl font-bold text-gray-800">About Me</h3>
@@ -249,7 +266,6 @@
   </div>
 </div>
 
-<!-- Hidden file input for profile picture -->
 <input 
   type="file" 
   accept="image/*" 
@@ -259,7 +275,6 @@
   aria-label="Select profile picture"
 />
 
-<!-- Profile Modals -->
 <ProfileModal 
   show={showPersonalModal} 
   type="personal" 
