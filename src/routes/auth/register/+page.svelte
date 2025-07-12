@@ -7,7 +7,6 @@
     Eye,
     EyeOff,
     User,
-    Phone,
     ArrowRight,
     Check,
     Users,
@@ -26,7 +25,6 @@
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
     password: "",
     confirmPassword: "",
     teamRole: "member",
@@ -188,46 +186,57 @@
         finalTeamCode = await generateUniqueTeamCode();
       }
 
-      const { data: signUpData, error } = await data.supabase.auth.signUp({
+      const { data: signUpData, error: signUpDataError } = await data.supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
+      });
+      console.log("Signed UP Auth Data", signUpData.user.id)
+
+      if (signUpDataError) {
+        toast.error("Registration failed: " + signUpDataError);
+      } else {
+
+        // Create Account in profiles model
+        const {data: createProfileData, error : createProfileDataError} = await data.supabase
+          .from("profiles")
+          .insert({
+            id: signUpData.user.id,
             first_name: formData.firstName,
             last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.lastName}`,
-            phone: formData.phone,
             role_id:
               formData.teamRole == "member"
                 ? "d41c0b3c-578e-417d-9842-2d955fa8ec18"
                 : "f8ef63a0-79ce-4fd2-b832-259a45a8fe94",
-            profile_picture: `https://ui-avatars.com/api/?name=${formData.firstName}+${formData.lastName}&background=random&bold=true`,
-            team_code: finalTeamCode, // store team code in user metadata
-          },
-        },
-      });
+          })
+          .select()
+          .single();
+        
+        if(createProfileDataError){
+          console.log("Error Response: ", createProfileDataError);
+          toast.error("Failed to upsert Profile: ", createProfileDataError);
+        }
+        console.log("Created Profile Response: ", createProfileData);
 
-      if (error) {
-        toast.error("Registration failed: " + error.message);
-      } else {
         // create team entry if team leader
         if (formData.teamRole === "team_leader" && signUpData.user) {
           try {
             const { data: teamData, error: teamError } = await data.supabase
               .from("teams")
-              .insert([
+              .insert(
                 {
                   name: `${formData.firstName} ${formData.lastName}'s Team`,
                   team_code: finalTeamCode,
-                },
-              ])
-              .select();
+                }
+              )
+              .select()
+              .single();
+            console.log("TEAM DATA: ", teamData)
 
             // update user profile with team_id
-            const { error: profileError } = await data.supabase
+            const { data: updateProfile, error: profileError } = await data.supabase
               .from("profiles")
-              .update({ team_id: teamData[0].id })
-              .eq("id", signUpData.user.id);
+              .update({ team_id: teamData.id })
+              .eq("id", createProfileData.id);
 
             if (teamError) {
               console.error("Error creating team:", teamError);
@@ -240,6 +249,7 @@
                 "Team created but profile update failed. Please contact support."
               );
             } else {
+
               console.log("Team created successfully:", teamData);
               generatedTeamCode = finalTeamCode;
               showTeamCodeSuccess = true;
@@ -480,30 +490,6 @@
             </div>
           </div>
 
-          <!-- Phone Field -->
-          <div class="space-y-2">
-            <label
-              for="phone"
-              class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide"
-            >
-              Phone Number
-            </label>
-            <div class="relative">
-              <div
-                class="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none"
-              >
-                <Phone class="w-4 h-4 sm:w-5 sm:h-5 text-svelte-primary" />
-              </div>
-              <input
-                type="tel"
-                id="phone"
-                bind:value={formData.phone}
-                required
-                class="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:bg-white focus:border-svelte-primary focus:ring-2 focus:ring-svelte-primary/20 transition-all duration-200 text-sm sm:text-base"
-                placeholder="Enter your phone number"
-              />
-            </div>
-          </div>
         </div>
 
         <!-- Password Fields -->
