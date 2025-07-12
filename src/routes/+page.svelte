@@ -173,10 +173,10 @@
           </div>
         </div>
 
-        <!-- Remember Me & Forgot Password -->
+        <!-- Forgot Password -->
         <div class="flex items-center justify-end">
           <a
-            href="/forgot-password"
+            href="/auth/forgot-password"
             class="text-sm text-svelte-primary hover:text-svelte-700 font-medium transition-colors"
           >
             Forgot password?

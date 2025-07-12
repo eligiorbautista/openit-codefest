@@ -126,9 +126,9 @@
                   <ul
                     class="dropdown-content menu bg-white rounded-lg shadow-lg border border-svelte-100 w-48 p-2 mt-2"
                   >
-                    <!-- <li>
+                    <li>
                       <a
-                        href="/account/profile"
+                        href="/users/account/profile"
                         class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm font-medium transition-colors {$page
                           .url.pathname === '/account/profile'
                           ? 'bg-svelte-100 text-svelte-primary'
@@ -137,13 +137,13 @@
                     </li>
                     <li>
                       <a
-                        href="/account/settings"
+                        href="/users/account/settings"
                         class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm font-medium transition-colors {$page
                           .url.pathname === '/account/settings'
                           ? 'bg-svelte-100 text-svelte-primary'
                           : ''}">Settings</a
                       >
-                    </li> -->
+                    </li>
                     <li><hr class="my-1 border-svelte-100" /></li>
                     <li>
                                              <button
@@ -201,7 +201,7 @@
             <nav
               class="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2"
             >
-              <a
+              <!-- <a
                 href="/about"
                 class="text-sm text-gray-600 hover:bg-svelte-primary hover:text-white px-2 py-1 rounded transition-colors {$page
                   .url.pathname === '/about'
@@ -214,7 +214,7 @@
                   .url.pathname === '/contact'
                   ? 'bg-svelte-primary text-white'
                   : ''}">Contact</a
-              >
+              > -->
             </nav>
           </div>
 
