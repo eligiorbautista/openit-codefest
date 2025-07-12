@@ -16,6 +16,7 @@
     LogOut,
     LogIn,
     UserPlus,
+    Network,
   } from "lucide-svelte";
   import { page } from "$app/stores";
   import { browser } from "$app/environment";
@@ -28,13 +29,15 @@
       drawerToggle.checked = false;
     }
   }
-
+  
   let { supabase, session } = data;
 
   supabase.auth.onAuthStateChange((event, newSession) => {
     if (event === "SIGNED_IN") {
       session = newSession;
       invalidateAll();
+
+      console.log("User signed in:", JSON.stringify(session.user));
     }
 
     if (event === "SIGNED_OUT") {
@@ -43,8 +46,6 @@
       invalidateAll();
     }
   });
-
-
 </script>
 
 <div class="drawer">
@@ -54,7 +55,7 @@
     {#if !$page.url.pathname.startsWith("/auth") && $page.url.pathname !== "/"}
       <header class="bg-white border-b border-svelte-100 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center h-16"> 
+          <div class="flex justify-between items-center h-16">
             <div class="flex items-center gap-4">
               <!-- MOBILE MENU -->
               <label
@@ -65,10 +66,10 @@
                 <Menu class="w-5 h-5" />
               </label>
               <!-- BRAND -->
-                             <button
-                 onclick={() => goto("/home")}
-                 class="flex items-center gap-2 text-xl font-semibold text-svelte-primary hover:text-svelte-700 transition-colors"
-               >
+              <button
+                onclick={() => goto("/home")}
+                class="flex items-center gap-2 text-xl font-semibold text-svelte-primary hover:text-svelte-700 transition-colors"
+              >
                 <img src="/svelte.png" alt="App Logo" class="w-6 h-6" />
                 {PUBLIC_APP_NAME}
               </button>
@@ -76,15 +77,25 @@
 
             <!-- Desktop Navigation -->
             <nav class="hidden lg:flex items-center space-x-8">
-                             <a
-                 href="/home"
-                 class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                   .url.pathname === '/home'
-                   ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                   : 'pb-1'}"
-               >
-                 Home
-               </a>
+              <a
+                href="/home"
+                class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                  .url.pathname === '/home'
+                  ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                  : 'pb-1'}"
+              >
+                Home
+              </a>
+
+              <a
+                href="/users/teams"
+                class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                  .url.pathname === '/users/teams'
+                  ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                  : 'pb-1'}"
+              >
+                Teams
+              </a>
               <!-- <a
                 href="/about"
                 class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
@@ -119,7 +130,7 @@
                     <img
                       class="w-8 h-8 rounded-full object-cover"
                       alt="User avatar"
-                      src={session.user?.user_metadata?.profile_picture || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
+                      src={session.user?.user_metadata?.avatar_url || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
                     />
                   </div>
                   <!-- USER MENU -->
@@ -146,11 +157,11 @@
                     </li>
                     <li><hr class="my-1 border-svelte-100" /></li>
                     <li>
-                                             <button
-                         type="button"
-                         class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm font-medium transition-colors w-full text-left"
-                         aria-label="Logout"
-                         onclick={() => supabase.auth.signOut()}>Sign out</button
+                      <button
+                        type="button"
+                        class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm font-medium transition-colors w-full text-left"
+                        aria-label="Logout"
+                        onclick={() => supabase.auth.signOut()}>Sign out</button
                       >
                     </li>
                   </ul>
@@ -158,8 +169,16 @@
               {:else}
                 <!-- Unauthenticated User Links -->
                 <div class="flex items-center gap-3">
-                  <a href="/" class="text-gray-600 hover:text-svelte-primary font-medium transition-colors">Login</a>
-                  <a href="/auth/register" class="bg-svelte-primary hover:bg-svelte-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">Sign Up</a>
+                  <a
+                    href="/"
+                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors"
+                    >Login</a
+                  >
+                  <a
+                    href="/auth/register"
+                    class="bg-svelte-primary hover:bg-svelte-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    >Sign Up</a
+                  >
                 </div>
               {/if}
             </div>
@@ -283,16 +302,26 @@
         <!-- Navigation menu -->
         <div class="flex-1 py-6">
           <nav class="space-y-1 px-6">
-                         <a
-               href="/home"
-               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                 .url.pathname === '/home'
-                 ? 'bg-svelte-primary text-white'
-                 : 'text-gray-700 hover:bg-svelte-50'}"
-             >
-               <Home class="w-5 h-5" />
-               Home
-             </a>
+            <a
+              href="/home"
+              class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                .url.pathname === '/home'
+                ? 'bg-svelte-primary text-white'
+                : 'text-gray-700 hover:bg-svelte-50'}"
+            >
+              <Home class="w-5 h-5" />
+              Home
+            </a>
+            <a
+              href="/users/teams"
+              class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                .url.pathname === '/users/teams'
+                ? 'bg-svelte-primary text-white'
+                : 'text-gray-700 hover:bg-svelte-50'}"
+            >
+              <Network class="w-5 h-5" />
+              Teams
+            </a>
             <!-- <a
               href="/about"
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
