@@ -18,7 +18,7 @@
     let currentProject = [];
     let projectBoards = [];
     let projectCards = [];
-    let isCreatingBoard = true;
+    let isCreatingBoard = false;
     let isLoading = false;
 
     let formData = {
@@ -30,13 +30,10 @@
     const boardButton = document.getElementById('board-button');
 
     function handleBoardButton()  {
-        boardButton.addEventListener('click', () => {
-            isCreatingBoard = !isCreatingBoard;
-            console.log(isCreatingBoard);
-        });
+        isCreatingBoard = !isCreatingBoard;
+        console.log("IsCreating Board: ", isCreatingBoard);
     }
    
-    console.log(isCreatingBoard);
 
     async function fetchProjectDetails(){
         const {data: projectDetailsData, error: projectDetailsError} = await data.supabase
@@ -118,8 +115,8 @@
                 toast.error('Error in creaing board');
             }
             toast.success('board created successfully');
-
-            await fetchProjectBoards();
+            isCreatingBoard = false
+            await fetchProjectBoards(projectId);
         }
         catch(error){
             console.log("Error creating data: ", error);
@@ -177,9 +174,10 @@
     });
 
     const getCardsForBoard = (boardId) => {
-        filter = projectCards.filter(card => card.projectBoards?.id == boardId);
-        console.log(filter);
-        return filter;
+        console.log("Project Cards: ", projectCards);
+        let result = projectCards.filter(obj => obj.projectBoards?.id == boardId);
+        console.log("Get Cards for Boards Result: ", result);
+        return result;
     };
 
     const goBack = () => {
@@ -317,8 +315,8 @@
           <h2 class="text-xl font-semibold text-gray-900 mb-6">
             Project Boards
           </h2>
-          <button on:click={() => handleBoardButton} id="board-button"
-            >Create Board</button
+          <button class="btn btn-primary mb-4" on:click={handleBoardButton} id="board-button"
+            >{!isCreatingBoard ? "Create Board" : "Cancel Creating"}</button
           >
 
           {#if projectBoards.length > 0}
@@ -344,65 +342,67 @@
                   <!-- Cards Container -->
                   <div class="space-y-3">
                     {#each projectCards as card}
-                      <div
-                        class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                      >
-                        <!-- Card Header -->
-                        <div class="flex items-start justify-between mb-3">
-                          <h4
-                            class="text-sm font-semibold text-gray-900 flex-1"
-                          >
-                            {card.name}
-                          </h4>
-                          <button
-                            on:click={() => approveCard(card.id, card.taskCategories?.points_to_give)}
-                          >
-                            Approve
-                          </button>
-                          <div class="flex items-center space-x-1 ml-2">
-                            {#if card.is_approved}
-                              <span
-                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                              >
-                                Approved
-                              </span>
-                            {/if}
-                            {#if card.is_archived}
-                              <span
-                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
-                              >
-                                Archived
-                              </span>
-                            {/if}
-                          </div>
-                        </div>
-
-                        <!-- Card Description -->
-                        <p class="text-xs text-gray-600 mb-3 line-clamp-2">
-                          {card.description}
-                        </p>
-
-                        <!-- Card Footer -->
-                        <div class="flex items-center justify-between">
-                          <div class="flex items-center space-x-2">
-                            <!-- Priority Badge -->
-                            <span
-                              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      {#if card.projectBoards.id == board.id}
+                        <div
+                          class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <!-- Card Header -->
+                          <div class="flex items-start justify-between mb-3">
+                            <h4
+                              class="text-sm font-semibold text-gray-900 flex-1"
                             >
-                              Category {card.taskCategories?.name} 
-                            </span>
+                              {card.name}
+                            </h4>
+                            <button
+                              on:click={() => approveCard(card.id, card.taskCategories?.points_to_give)}
+                            >
+                              Approve
+                            </button>
+                            <div class="flex items-center space-x-1 ml-2">
+                              {#if card.is_approved}
+                                <span
+                                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                >
+                                  Approved
+                                </span>
+                              {/if}
+                              {#if card.is_archived}
+                                <span
+                                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                                >
+                                  Archived
+                                </span>
+                              {/if}
+                            </div>
                           </div>
 
-                          <!-- Avatar -->
-                          <div
-                            class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center"
-                          >
-                            <span class="text-xs font-medium text-gray-700">
-                              {card.profile_id}
-                            </span>
+                          <!-- Card Description -->
+                          <p class="text-xs text-gray-600 mb-3 line-clamp-2">
+                            {card.description}
+                          </p>
+
+                          <!-- Card Footer -->
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                              <!-- Priority Badge -->
+                              <span
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              >
+                                Category {card.taskCategories?.name} 
+                              </span>
+                            </div>
+
+                            <!-- Avatar -->
+                            <div
+                              class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center"
+                            >
+                              <span class="text-xs font-medium text-gray-700">
+                                {card.profile_id}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      {/if}
                     {/each}
 
                     <!-- Empty State for Board -->
@@ -442,7 +442,8 @@
                     </button>
                   </div>
                 </div>
-                {#if isCreatingBoard}
+              {/each}
+              {#if isCreatingBoard}
                 <form on:submit={createProjectBoard}>
                      <div class="bg-gray-50 rounded-lg p-4 min-h-[500px]">
                     <!-- Board Header -->
@@ -480,7 +481,6 @@
                   </div>
                 </form>
                 {/if}
-              {/each}
             </div>
           {:else}
             <!-- Empty State for Project -->
