@@ -7,6 +7,9 @@
     import { goto } from "$app/navigation";
     import { toast } from 'svelte-sonner';
     import { PUBLIC_APP_NAME } from "$env/static/public";
+    import { get } from 'svelte/store';
+    import { page } from '$app/stores';
+    import { formatDate } from "$lib/helpers/formats";
     
     export let data;
     
@@ -17,10 +20,17 @@
     let hasBadgeLogo = false;
     let selectedFile = null;
 
+    // old logo path to delete
+    let oldLogo = ''
+
+    // ID from route
+    let id;
+
     let formData = {
-        name : achievements.name || '',
-        description: achievements.description || '',
+        name : '',
+        description: '',
         badge_logo : '',
+        created_at : '',
     }
     
 
@@ -47,8 +57,25 @@
             const fileName = `${Date.now()}.${fileExt}`;
             const filePath = `${achievement_id}/${fileName}`;
 
-            toast.info('Uploading profile picture...');
-
+            // if has badge logo is true means its changing so delete the old file path
+            // if (hasBadgeLogo){
+            //     console.log("Trying to delete: ", oldLogo);
+            //     const splitText = oldLogo.split("badges/")
+            //     console.log("Split Text Restul:", splitText[1])
+            //     const { data: deleteImage, error: deleteImageError } = await data.supabase.storage
+            //         .from('achivement-badges')
+            //         .remove([splitText[1]])
+                    
+            //     if (deleteImageError){
+            //         console.log("Old Image was not deleted successfully", deleteImageError)
+            //     }
+            //     else{
+            //         console.log("Old Image was deleted", deleteImage)
+            //     }
+            // }
+                
+            toast.info('Uploading Logo...');
+            // Upload new image with old path
             const { data: uploadData, error: uploadError } = await data.supabase.storage
             .from('achievements-badges')
             .upload(filePath, formData.badge_logo, {
@@ -77,7 +104,7 @@
             console.log("Updating Achievements Logo URL: ", updateAchievementData)
 
             if(updateAchievementsError){
-                toast.error("Failed to upsert achievement: ", updateAchievementData);
+                toast.error("Failed to upsert achievement: ", updateAchievementsError);
                 return;
             }
 
@@ -95,27 +122,28 @@
 
         isLoading = true;
         try{
-            const {data: upsertAchievementsData , error: upsertAchievementsError} = await data.supabase
+            const {data: updateAchievementsData , error: updateAchievementsError} = await data.supabase
                 .from('achievements')
-                .insert({
+                .update({
                     name: formData.name,
                     description: formData.description,
-                    badge_logo: formData.badge_logo
+                    badge_logo: formData.badge_logo,
                 })
+                .eq('id', id)
                 .select()
                 .single();
             
-            if(upsertAchievementsError){
-                toast.error("Failed to upsert achievement: ", upsertAchievementsError);
+            if(updateAchievementsError){
+                toast.error("Failed to upsert achievement: ", updateAchievementsError);
                 return;
             }
 
-            console.log("Acheivement successfully upserted", upsertAchievementsData);
+            console.log("Acheivement successfully upserted", updateAchievementsData);
 
             if(hasBadgeLogo){
                 console.log("Uploading badge logo...");
 
-                const uploadedImage = await uploadAchievementLogo(upsertAchievementsData.id);
+                const uploadedImage = await uploadAchievementLogo(updateAchievementsData.id);
 
                 // const {error: uploadingImageError} = await data.supabase
                 //     .from('achievements')
@@ -143,11 +171,44 @@
         }
     }
 
+    // Fetch current data from route params of id for specific data fecthing
+    async function fetchAchievements(id){
+        const {data: achievementsData, error: achievementsError} = await data.supabase
+            .from('achievements')
+            .select()
+            .eq('id', id)
+            .maybeSingle()
+        
+
+        if(achievementsError){
+            console.log("Error fetching achievements: ", achievementsError);
+        }
+
+        // Store old logo for deletion when changing logo
+        if(achievementsData.badge_logo){
+            oldLogo = achievementsData.badge_logo;
+        }
+        formData.name = achievementsData.name;
+        formData.description = achievementsData.description;
+        formData.badge_logo = achievementsData.badge_logo;
+        formData.created_at = achievementsData.created_at;
+        console.log("achievements: ", formData);
+    }
+
+    onMount(() => {
+        const $page = get(page);
+        id = $page.params.id;
+
+        if (id){
+            fetchAchievements(id);
+        }
+    })
+
 </script>
 
 
 <svelte:head>
-    <title>Create Achievements - {PUBLIC_APP_NAME}</title>
+    <title>Update Achievements - {PUBLIC_APP_NAME}</title>
 </svelte:head>
 
 
@@ -158,7 +219,7 @@
 <form on:submit={upsertAchievement}>
   <div class="space-y-12">
     <div class="border-b border-gray-900/10 pb-12">
-      <h2 class="text-base/7 font-semibold text-gray-900">Achievements</h2>
+      <h2 class="text-base/7 font-semibold text-gray-900">Update The Selected Achievements</h2>
       <p class="mt-1 text-sm/6 text-gray-600">This information will be displayed publicly.</p>
 
       <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
@@ -198,9 +259,16 @@
 
     <!-- Logo File -->
     <div>
+        {#if formData.badge_logo}
+          <div class="avatar flex justify-center mb-4">
+            <div class="w-24 rounded-full">
+              <img src={hasBadgeLogo ? selectedFile : formData.badge_logo} alt="error"/>
+            </div>
+          </div>
+        {/if}
         <label
             class="block font-semibold mb-1 text-gray-700"
-            for="badge-logo">Upload Achievement Logo</label
+            for="badge-logo">Change Achievement Logo</label
         >
         <input
             id="badge-logo"
@@ -208,17 +276,8 @@
             type="file"
             accept="image/*"
             on:change={handleFileSelect}
-            required
             disabled={uploading}
         />
-        {#if selectedFile}
-          <div class="avatar flex justify-center">
-            <h4>Preview:</h4>
-            <div class="w-24 rounded-full">
-              <img src={selectedFile} alt="error"/>
-            </div>
-          </div>
-        {/if}
     </div>
     
   </div>
@@ -236,7 +295,7 @@
         class="btn btn-primary" 
         type="submit"
     >
-        Create
+        Update
     </button>
   </div>
 </form>
