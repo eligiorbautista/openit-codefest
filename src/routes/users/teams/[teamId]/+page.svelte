@@ -10,7 +10,7 @@
     export let data;
 
     let teamId;
-    let currentTeam;
+    let currentTeam = [];
     let projects = [];
     let teamProjects = [];
     let activeProjects = [];
@@ -20,11 +20,29 @@
     let showActiveProjects = true;
     let showArchivedProjects = false;
 
+    async function fetchTeamByTeamId(teamid){
+        const {data: teamsData, error: teamsError} = await data.supabase
+            .from("teams")
+            .select('*')
+            .eq('id', teamid)
+            .select()
+            .single()
+            ;
+        
+        if(teamsError){
+            console.log("Team error: ", teamsError);
+        }
+
+        currentTeam = teamsData ?? [];
+        console.log("Teams fetched: ", currentTeam);
+    }
+
     async function fetchProjectsByTeamId(team_id){
         const {data: projectsData, error: projectsError} = await data.supabase
             .from('projects')
             .select('*')
             .eq('team_id', team_id)
+            .select();
         
         if(projectsError){
             console.log("error: ", projectsError);
@@ -36,16 +54,20 @@
         }
     }
 
+    
+
     onMount(() => {
         teamId = $page.params.teamId;
         fetchProjectsByTeamId(teamId);
 
+        fetchTeamByTeamId(teamId);
         
         if (teamId) {
             teamProjects = projects.filter(project => project.team_id == teamId);
             activeProjects = projects.filter(project => !project.is_archived);
             archivedProjects = projects.filter(project => project.is_archived);
         }
+        console.log("active projects: ", activeProjects);
     });
 
     const handleProjectClick = (projectId) => {
@@ -87,7 +109,6 @@
                 Back to Teams
             </button>
 
-            {#if currentTeam}
                 <div class="bg-white rounded-lg border p-4 mb-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
@@ -133,8 +154,65 @@
                     </div>
                 </div>
 
-                <!-- Active Projects -->
                 <div class="bg-white rounded-lg border mb-4">
+                    <button 
+                        on:click={toggleActiveProjects}
+                        class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                    >
+                        <div class="flex items-center">
+                            <h2 class="text-lg font-semibold text-gray-900">Active Projects</h2>
+                            <span class="ml-2 bg-green-100 text-green-800 text-sm px-2 py-1 rounded-full">{activeProjects.length}</span>
+                        </div>
+                        <svg 
+                            class="w-5 h-5 text-gray-400 transform transition-transform {showActiveProjects ? 'rotate-180' : ''}"
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    {#if showActiveProjects}
+                        <div class="p-4 border-t">
+                                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {#each projects as project}
+                                        <div 
+                                            class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                                            on:click={() => handleProjectClick(project.id)}
+                                            on:keydown={(e) => e.key === 'Enter' && handleProjectClick(project.id)}
+                                            role="button"
+                                            tabindex="0"
+                                        >
+                                            <div class="flex items-center mb-3">
+                                                <div class="w-10 h-10 rounded-lg overflow-hidden border flex-shrink-0">
+                                                    <img 
+                                                        src={project.project_logo} 
+                                                        alt="{project.name} logo" 
+                                                        class="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div class="ml-3">
+                                                    <h3 class="font-medium text-gray-900">{project.name}</h3>
+                                                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-600">
+                                                        Active
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p class="text-sm text-gray-600 mb-2">{project.description}</p>
+                                            <div class="text-xs text-gray-500">
+                                                Created {formatDate(project.created_at)}
+                                            </div>
+                                        </div>
+                                    {/each}
+                                </div>
+                        </div>
+                    {/if}
+                </div>
+
+               
+                <!-- Active Projects -->
+                <!-- <div class="bg-white rounded-lg border mb-4">
                     <button 
                         on:click={toggleActiveProjects}
                         class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
@@ -199,7 +277,7 @@
                             {/if}
                         </div>
                     {/if}
-                </div>
+                </div> -->
 
                 <!-- Archived Projects -->
                 {#if archivedProjects.length > 0}
@@ -278,15 +356,7 @@
                         </button>
                     </div>
                 {/if}
-            {:else}
-                <div class="bg-white rounded-lg border p-8 text-center">
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Team not found</h3>
-                    <p class="text-gray-500 mb-4">The team you're looking for doesn't exist.</p>
-                    <button on:click={goBack} class="bg-svelte-primary text-white px-4 py-2 rounded-lg hover:bg-svelte-700 transition-colors">
-                        Back to Teams
-                    </button>
-                </div>
-            {/if}
+
         </div>
     </div>
 </div> 

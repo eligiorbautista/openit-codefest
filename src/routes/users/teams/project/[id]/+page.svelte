@@ -9,15 +9,34 @@
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
 
+    export let data;
+
     let projectId;
     let currentProject;
     let currentTeam;
     let projectBoards = [];
     let projectCards = [];
 
+    async function fetchProjectBoards(project_id){
+        const {data: projectBoardsData, error: projectBoardsError} = await data.supabase
+            .from('projectBoards')
+            .select('*')
+            .eq('project_id', project_id)
+            .select();
+        
+        if(projectBoardsError){
+            console.log("Error fetching boards: ", projectBoardsError);
+        }
+
+        projectBoards = projectBoardsData ?? [];
+        console.log("Fetched boards: ", projectBoards);
+    }
+
     onMount(() => {
         projectId = $page.params.id;
         console.log("Project ID:", projectId);
+
+        fetchProjectBoards(projectId);
         
         if (projectId) {
             currentProject = mockProjects.find(project => project.id == projectId);
