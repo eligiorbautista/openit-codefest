@@ -17,11 +17,15 @@
     LogIn,
     UserPlus,
     Network,
+    Shield,
+    Users,
+    Crown,
   } from "lucide-svelte";
   import { page } from "$app/stores";
   import { browser } from "$app/environment";
   import { Toaster, toast } from "svelte-sonner";
   import { goto, invalidateAll } from "$app/navigation";
+  import { getUserRole, hasRole, hasAnyRole, ROLES } from "$lib/auth/roles.js";
 
   $: if (browser && $page.url.pathname) {
     const drawerToggle = document.getElementById("drawer-toggle");
@@ -31,6 +35,12 @@
   }
   
   let { supabase, session } = data;
+
+  // Get user role information
+  $: userRole = data.profile ? getUserRole(data.profile) : null;
+  $: isAdmin = userRole ? hasRole(data.profile, ROLES.ADMIN) : false;
+  $: isTeamLeader = userRole ? hasRole(data.profile, ROLES.TEAM_LEADER) : false;
+  $: isMember = userRole ? hasRole(data.profile, ROLES.MEMBER) : false;
 
   supabase.auth.onAuthStateChange((event, newSession) => {
     if (event === "SIGNED_IN") {
@@ -96,24 +106,45 @@
               >
                 Teams
               </a>
-              <!-- <a
-                href="/about"
+
+              <!-- Role-based navigation -->
+              {#if session && userRole}
+                {#if isAdmin}
+                  <a
+                    href="/users/ad"
+                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                      .url.pathname.startsWith('/users/ad')
+                      ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                      : 'pb-1'}"
+                  >
+                    Admin
+                  </a>
+                {/if}
+                
+                {#if isTeamLeader || isAdmin}
+                  <a
+                    href="/users/tl"
                 class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                  .url.pathname === '/about'
+                      .url.pathname.startsWith('/users/tl')
                   ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
                   : 'pb-1'}"
               >
-                About
+                    Team Leader
               </a>
+                {/if}
+                
+                {#if isMember || isTeamLeader || isAdmin}
               <a
-                href="/contact"
+                    href="/users/me"
                 class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                  .url.pathname === '/contact'
+                      .url.pathname.startsWith('/users/me')
                   ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
                   : 'pb-1'}"
               >
-                Contact
-              </a> -->
+                    My Area
+                  </a>
+                {/if}
+              {/if}
             </nav>
 
             <!-- Auth/User Menu -->
@@ -137,6 +168,16 @@
                   <ul
                     class="dropdown-content menu bg-white rounded-lg shadow-lg border border-svelte-100 w-48 p-2 mt-2"
                   >
+                    <!-- User Role Indicator -->
+                    {#if userRole}
+                      <li class="menu-title">
+                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          {userRole.name}
+                        </span>
+                      </li>
+                      <li><hr class="my-1 border-svelte-100" /></li>
+                    {/if}
+                    
                     <li>
                       <a
                         href="/users/account/profile"
@@ -322,26 +363,48 @@
               <Network class="w-5 h-5" />
               Teams
             </a>
-            <!-- <a
-              href="/about"
+
+            <!-- Role-based navigation -->
+            {#if session && userRole}
+              {#if isAdmin}
+                <a
+                  href="/users/ad"
+                  class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                    .url.pathname.startsWith('/users/ad')
+                    ? 'bg-svelte-primary text-white'
+                    : 'text-gray-700 hover:bg-svelte-50'}"
+                >
+                  <Shield class="w-5 h-5" />
+                  Admin
+                </a>
+              {/if}
+              
+              {#if isTeamLeader || isAdmin}
+                <a
+                  href="/users/tl"
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                .url.pathname === '/about'
+                    .url.pathname.startsWith('/users/tl')
                 ? 'bg-svelte-primary text-white'
                 : 'text-gray-700 hover:bg-svelte-50'}"
             >
-              <Info class="w-5 h-5" />
-              About
+                  <Crown class="w-5 h-5" />
+                  Team Leader
             </a>
+              {/if}
+              
+              {#if isMember || isTeamLeader || isAdmin}
             <a
-              href="/contact"
+                  href="/users/me"
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
-                .url.pathname === '/contact'
+                    .url.pathname.startsWith('/users/me')
                 ? 'bg-svelte-primary text-white'
                 : 'text-gray-700 hover:bg-svelte-50'}"
             >
-              <Mail class="w-5 h-5" />
-              Contact
-            </a> -->
+                  <User class="w-5 h-5" />
+                  My Area
+                </a>
+              {/if}
+            {/if}
           </nav>
 
           {#if session}
