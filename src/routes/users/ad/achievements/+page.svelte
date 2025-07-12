@@ -21,13 +21,13 @@
     
 
     async function fetchAchievements(){
-        const {data: achievementsData, error: achivementsError} = await data.supabase
+        const {data: achievementsData, error: achievementsError} = await data.supabase
             .from('achievements')
             .select('*')
         
 
-        if(achivementsError){
-            console.log("Error fetching achievements: ", achivementsError);
+        if(achievementsError){
+            console.log("Error fetching achievements: ", achievementsError);
         }
 
         achievements = achievementsData ?? [];
@@ -51,7 +51,13 @@
     <h1 class="text-xl font-bold">ACHIEVEMENTS</h1>
 
     {#each achievements as achievement}
-        <div class="p-4 mb-5 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200">
+        <div class="p-4 mb-5 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 hover:border-svelte-primary hover:bg-white transition-all duration-200"
+              on:click={() => goto(`/users/ad/achievements/update/${achievement.id}`)}
+              on:keydown={(e) =>
+                e.key === "Enter" && goto(`/users/ad/achievements/update/${achievement.id}`)}
+              role="button"
+              tabindex="0"
+        >
             {#if achievement.badge_logo}
               <div class="avatar flex justify-center">
                 <div class="w-24 rounded-full">
