@@ -13,6 +13,7 @@
     export let data;
 
     let projectId;
+    let profileId = data.profile?.id;
     let teamId = data.profile?.team_id;
     let currentProject = [];
     let projectBoards = [];
@@ -81,7 +82,8 @@
                 project_id, 
                 taskCategories (
                     id,
-                    name
+                    name,
+                    points_to_give
                 ),
                 projectBoards(
                     id,
@@ -127,23 +129,36 @@
         }
     }
 
-    async function approveCard(card_id, profile_id){
+    async function approveCard(card_id, points){
         const{data: approveCardData, error: approveCardError} = await data.supabase
             .from('projectCards')
             .update({
                 is_approved : true
             })
+            .eq('id', card_id)
+            .single();
 
         if(approveCardError){
             console.log('error approving card: ', approveCardError)
         }
+        toast.success("Task approved");
 
-        if(approveCardData){
-            const {data: addPointData, error: approveCardError} = await data.supabase
+        const {data: addPointData, error: addPointError} = await data.supabase
                 .from('profiles')
-                .update()
-        }
+                .update({
+                    current_points : points
+                })
+                .eq('id', profileId)
+                .select()
+                .single()
+
+            if(addPointError){
+                console.log("Error adding points", addPointError);
+            }
+            console.log("Added points: ", points);
+            toast.success("Points added yipee");
     }
+    
 
     onMount(() => {
         projectId = $page.params.id;
@@ -158,22 +173,13 @@
 
         // fetchProjectCards();
 
-        
-        if (projectId) {
-            currentProject = mockProjects.find(project => project.id == projectId);
-            console.log("Current Project:", currentProject);
-            
-            if (currentProject) {
-                projectBoards = mockProjectBoards.filter(board => board.project_id == projectId);
-                projectCards = mockProjectCards.filter(card => card.project_id == projectId);
-                console.log("Project Boards:", projectBoards);
-                console.log("Project Cards:", projectCards);
-            }
-        }
+
     });
 
     const getCardsForBoard = (boardId) => {
-        return projectCards.filter(card => card.projectBoards?.id == boardId);
+        filter = projectCards.filter(card => card.projectBoards?.id == boardId);
+        console.log(filter);
+        return filter;
     };
 
     const goBack = () => {
@@ -348,6 +354,11 @@
                           >
                             {card.name}
                           </h4>
+                          <button
+                            on:click={() => approveCard(card.id, card.taskCategories?.points_to_give)}
+                          >
+                            Approve
+                          </button>
                           <div class="flex items-center space-x-1 ml-2">
                             {#if card.is_approved}
                               <span
