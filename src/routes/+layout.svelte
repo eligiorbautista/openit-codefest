@@ -90,25 +90,29 @@
 
             <!-- Desktop Navigation -->
             <nav class="hidden lg:flex items-center space-x-8">
-              <a
-                href="/dashboard"
-                class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                  .url.pathname === '/dashboard'
-                  ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                  : 'pb-1'}"
-              >
-                Dashboard
-              </a>
+              {#if session && userRole}
+                {#if userIsTeamLeader || userIsMember}
+                  <a
+                    href="/dashboard"
+                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                      .url.pathname === '/dashboard'
+                      ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                      : 'pb-1'}"
+                  >
+                    Dashboard
+                  </a>
 
-              <a
-                href="/users/teams"
-                class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                  .url.pathname === '/users/teams'
-                  ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                  : 'pb-1'}"
-              >
-                Teams
-              </a>
+                  <a
+                    href="/users/teams"
+                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                      .url.pathname === '/users/teams'
+                      ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                      : 'pb-1'}"
+                  >
+                    Teams
+                  </a>
+                {/if}
+              {/if}
 
               <!-- Role-based navigation -->
               {#if session && userRole}
@@ -169,26 +173,10 @@
                           Manage Members
                         </a>
                       </li>
-                      <li>
-                        <a href="/users/tl/update-projects" class="text-gray-700 hover:bg-svelte-50 rounded-md px-3 py-2 text-sm">
-                          Update Projects
-                        </a>
-                      </li>
                     </ul>
                   </div>
                 {/if}
                 
-                {#if userIsMember || userIsTeamLeader || userIsAdmin}
-                  <a
-                    href="/users/me"
-                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
-                      .url.pathname.startsWith('/users/me')
-                      ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                      : 'pb-1'}"
-                  >
-                    My Area
-                  </a>
-                {/if}
               {/if}
             </nav>
 
@@ -206,7 +194,7 @@
                     <img
                       class="w-8 h-8 rounded-full object-cover"
                       alt="User avatar"
-                      src={session.user?.user_metadata?.profile_picture || "/default-avatar.png"} 
+                      src={session.user?.user_metadata?.profile_picture || `https://ui-avatars.com/api/?name=${data.profile.first_name}&background=random&bold=true`} 
                     />
                   </div>
                   <!-- USER MENU -->

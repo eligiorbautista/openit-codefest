@@ -367,7 +367,7 @@
         .update({
             current_points: userData.current_points - selectedReward[0].points_requirement
         })
-        .eq('id', id)
+        .eq('id', data.session?.user.id)
         .select()
         .single();
       
@@ -375,6 +375,7 @@
           toast.error("Failed to Profiles current points: ", updateProfileDataError);
           return;
       }
+      userData.current_points = userData.current_points - selectedReward[0].points_requirement
 
       console.log("Profile successfully updated", updateProfileData);
       toast.success("Successfully redeemed the reward")
