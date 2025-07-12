@@ -7,8 +7,11 @@
     import { page } from '$app/stores';
     import { onMount } from "svelte";
 
+    export let data;
+
     let teamId;
     let currentTeam;
+    let projects = [];
     let teamProjects = [];
     let activeProjects = [];
     let archivedProjects = [];
@@ -17,14 +20,31 @@
     let showActiveProjects = true;
     let showArchivedProjects = false;
 
+    async function fetchProjectsByTeamId(team_id){
+        const {data: projectsData, error: projectsError} = await data.supabase
+            .from('projects')
+            .select('*')
+            .eq('team_id', team_id)
+        
+        if(projectsError){
+            console.log("error: ", projectsError);
+        }
+        else{
+
+            projects = projectsData ?? [];
+            console.log("Projects fetched: ", projectsData);
+        }
+    }
+
     onMount(() => {
         teamId = $page.params.teamId;
-        currentTeam = mockTeams.find(team => team.id == teamId);
+        fetchProjectsByTeamId(teamId);
+
         
-        if (currentTeam) {
-            teamProjects = mockProjects.filter(project => project.team_id == teamId);
-            activeProjects = teamProjects.filter(project => !project.is_archived);
-            archivedProjects = teamProjects.filter(project => project.is_archived);
+        if (teamId) {
+            teamProjects = projects.filter(project => project.team_id == teamId);
+            activeProjects = projects.filter(project => !project.is_archived);
+            archivedProjects = projects.filter(project => project.is_archived);
         }
     });
 
