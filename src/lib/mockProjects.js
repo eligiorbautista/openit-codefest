@@ -1,6 +1,6 @@
 export const mockProjects = [
         {
-            id: 1,
+            id: 'f601551c-2393-471c-a595-f3a869c0a343',
             name: "E-commerce Platform",
             description: "Building a modern e-commerce platform with React and Node.js",
             team_id: 1,
