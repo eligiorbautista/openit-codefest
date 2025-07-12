@@ -16,6 +16,7 @@
   import { toast } from "svelte-sonner";
   import ProfileAchievement from "$lib/components/ProfileAchievement.svelte";
   import { Mail } from "@lucide/svelte";
+  import { onMount } from 'svelte';
 
   export let data;
 
@@ -54,7 +55,35 @@
       data.session?.user?.user_metadata?.profile_picture ||
       `https://ui-avatars.com/api/?name=${data.profile.first_name}&background=random&bold=true`,
   };
-
+  let teamData = {
+    id: data.profile?.team_id,
+    team_code: '',
+  }
+  
+  onMount(() => {
+    if (data.profile?.team_id){
+        fetchTeams(data.profile?.team_id);
+    }
+  })
+  
+  const fetchTeams = async (id) =>{
+    if(id){
+      const { data: teamsData, error: teamsDataError } = await data.supabase
+        .from('teams')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+        console.log("TeamsDataFetch: ", teamsData)
+      if(!teamsDataError){
+        teamData.team_code = teamsData.team_code;
+      }
+      else{
+        console.log("TeamsDataFetchError: ", teamsDataError)
+      }
+    }
+  }
+  console.log("Team Data:", teamData);
   console.log("Session Data:", data.session?.user);
   console.log("Profile data:", userData);
 
@@ -116,7 +145,6 @@
       if (metaDataError) {
         console.warn("Failed to update user metadata:", metadataError);
       }
-
       userData = { ...userData, ...profileData };
       closeModal();
       toast.success("User updated successfully!");
@@ -342,7 +370,7 @@
             </div>
 
             <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-              {userData.name}
+              {userData.first_name} {userData.last_name}
             </h2>
             <p class="text-gray-600 mb-6">Software Developer</p>
 
@@ -377,6 +405,10 @@
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Profile Views</span>
               <span class="font-medium text-gray-800">127</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-600">Team Code</span>
+              <span class="font-medium text-gray-800">{teamData.team_code}</span>
             </div>
           </div>
         </div>
