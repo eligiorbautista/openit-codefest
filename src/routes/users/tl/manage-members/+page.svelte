@@ -12,9 +12,17 @@
 
     // Fetch Team ID from session, from the user who is logged in
     // Fetch Members with Team ID
+    export let data;
 
     // Store members here
     let members = []
+
+    console.log(data?.session?.user);
+
+
+    async function getMembersByTeamId(){
+
+    }
 
     // Pagination by 7
 
