@@ -14,12 +14,77 @@
   let userTeams = [];
   let leaderTeams = [];
 
-  $: totalTeams = mockTeams.length;
-  $: totalProjects = mockProjects.length;
-  $: activeProjects = mockProjects.filter((p) => !p.is_archived).length;
-  $: totalTasks = mockProjectCards.length;
-  $: completedTasks = mockProjectCards.filter((c) => c.is_approved).length;
-  $: recentProjects = mockProjects.slice(0, 3);
+  let teams = [];
+  let teamId = data.profile?.team_id;
+  let userId = data?.session?.user.id;
+  let projects = [];
+  let teamProjects = [];
+  let activeProjects = [];
+  let archivedProjects = [];
+  let members = [];
+
+  
+
+    async function fetchTeamByTeamId(){
+        const {data: teamsData, error: teamsError} = await data.supabase
+            .from("teams")
+            .select('*')
+            .eq('id', teamId)
+            .select();
+        
+        if(teamsError){
+            console.log("Team error: ", teamsError);
+        }
+
+        teams = teamsData ?? [];
+        console.log("Teams fetched: ", teams);
+    }
+
+    async function fetchProjectsByTeamId(team_id){
+        const {data: projectsData, error: projectsError} = await data.supabase
+            .from('projects')
+            .select('*')
+            .eq('team_id', team_id)
+            .select();
+        
+        if(projectsError){
+            console.log("error: ", projectsError);
+        }
+        else{
+
+            projects = projectsData ?? [];
+
+            console.log("Projects fetched: ", projects);
+            teamProjects = projects.filter(obj => obj.team_id == teamId);
+            activeProjects = projects.filter(obj => !obj.is_archived);
+            archivedProjects = projects.filter(obj => obj.is_archived);
+            console.log("active projects: ", activeProjects);
+            console.log("team projects: ", teamProjects);
+            console.log("archived projects: ", archivedProjects);
+        }
+    }
+
+    async function fetchTeamMembers(team_id){
+        const {data: membersData, error: membersDataError} = await data.supabase
+            .from("profiles")
+            .select('*')
+            .eq('team_id', team_id)
+            .select();
+        
+        if(membersDataError){
+            console.log("Member error: ", membersDataError);
+        }
+
+        members = membersData ?? [];
+        console.log("membersData fetched: ", members);
+    }
+
+    onMount(() => {
+        fetchTeamByTeamId();
+        fetchProjectsByTeamId(teamId);
+        fetchTeamMembers(teamId);
+    })
+
 </script>
 
 <svelte:head>
@@ -62,12 +127,6 @@
             >
               New Project
             </button>
-            <button
-              on:click={() => goto("/users/account/settings")}
-              class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Settings
-            </button>
           {:else}
             <button
               on:click={() => goto("/users/teams")}
@@ -93,26 +152,12 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {#if isTeamLeader}
         <div class="bg-white rounded-lg border p-4">
-          <div class="text-2xl font-bold text-gray-900">
-            {leaderTeams.length}
-          </div>
-          <div class="text-sm text-gray-500">Teams Led</div>
-        </div>
-        <div class="bg-white rounded-lg border p-4">
-          <div class="text-2xl font-bold text-svelte-primary">
-            {mockProjects.filter((p) =>
-              leaderTeams.some((t) => t.id === p.team_id)
-            ).length}
-          </div>
-          <div class="text-sm text-gray-500">Your Projects</div>
-        </div>
-        <div class="bg-white rounded-lg border p-4">
-          <div class="text-2xl font-bold text-gray-900">{totalTasks}</div>
-          <div class="text-sm text-gray-500">Total Tasks</div>
+          <div class="text-2xl font-bold text-gray-900">{projects.length}</div>
+          <div class="text-sm text-gray-500">Total Projects</div>
         </div>
         <div class="bg-white rounded-lg border p-4">
           <div class="text-2xl font-bold text-green-600">
-            {leaderTeams.reduce((acc, team) => acc + team.members_count, 0)}
+            {members.length}
           </div>
           <div class="text-sm text-gray-500">Team Members</div>
         </div>
@@ -128,12 +173,12 @@
           <div class="text-sm text-gray-500">Active Projects</div>
         </div>
         <div class="bg-white rounded-lg border p-4">
-          <div class="text-2xl font-bold text-gray-900">{totalTasks}</div>
+          <div class="text-2xl font-bold text-gray-900">{projects.length}</div>
           <div class="text-sm text-gray-500">My Tasks</div>
         </div>
         <div class="bg-white rounded-lg border p-4">
           <div class="text-2xl font-bold text-green-600">
-            {Math.round((completedTasks / totalTasks) * 100)}%
+            {Math.round((completedTasks / projects.length) * 100)}%
           </div>
           <div class="text-sm text-gray-500">Completed</div>
         </div>
@@ -161,7 +206,7 @@
         </div>
 
         <div class="space-y-3">
-          {#each recentProjects as project}
+          {#each projects as project}
             <div
               class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
               on:click={() => goto(`/users/teams/project/${project.id}`)}

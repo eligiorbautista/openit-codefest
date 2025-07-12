@@ -50,7 +50,14 @@
         else{
 
             projects = projectsData ?? [];
-            console.log("Projects fetched: ", projectsData);
+
+            console.log("Projects fetched: ", projects);
+            teamProjects = projects.filter(obj => obj.team_id == teamId);
+            activeProjects = projects.filter(obj => !obj.is_archived);
+            archivedProjects = projects.filter(obj => obj.is_archived);
+            console.log("active projects: ", activeProjects);
+            console.log("team projects: ", teamProjects);
+            console.log("archived projects: ", archivedProjects);
         }
     }
 
@@ -62,12 +69,6 @@
 
         fetchTeamByTeamId(teamId);
         
-        if (teamId) {
-            teamProjects = projects.filter(project => project.team_id == teamId);
-            activeProjects = projects.filter(project => !project.is_archived);
-            archivedProjects = projects.filter(project => project.is_archived);
-        }
-        console.log("active projects: ", activeProjects);
     });
 
     const handleProjectClick = (projectId) => {
