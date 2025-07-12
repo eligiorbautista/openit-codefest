@@ -15,9 +15,13 @@
   } from "lucide-svelte";
   import { goto } from "$app/navigation";
   import { toast } from "svelte-sonner";
+  import { onMount } from "svelte";
+  import avatar from "daisyui/components/avatar/index.js";
+
 
   export let data;
 
+  let userRoles = [];
   let formData = {
     firstName: "",
     lastName: "",
@@ -55,6 +59,8 @@
     formData.password === formData.confirmPassword &&
     formData.confirmPassword.length > 0;
 
+  
+  
   function togglePasswordVisibility(field) {
     if (field === "password") {
       showPassword = !showPassword;
@@ -78,6 +84,23 @@
     const texts = ["", "Weak", "Fair", "Good", "Strong"];
     return texts[strength] || "";
   }
+
+  async function getRoles(){
+    const {data: rolesData, error: rolesError} = await data.supabase.from('roles').select(`*`)
+
+    if(rolesError){
+      console.log("Error: ", rolesError);
+    }
+    else{
+      userRoles = rolesData ?? [];
+      console.log("Fetched user roles", userRoles);
+    }
+  }
+
+  onMount(() => {
+    getRoles();
+  })
+
 
   async function handleRegister(event) {
     event.preventDefault();
@@ -107,6 +130,7 @@
               formData.teamRole == "member"
                 ? "d41c0b3c-578e-417d-9842-2d955fa8ec18"
                 : "f8ef63a0-79ce-4fd2-b832-259a45a8fe94",
+            profile_picture: `https://ui-avatars.com/api/?name=${formData.firstName}+${formData.lastName}&background=random&bold=true`,
           },
         },
       });
@@ -115,49 +139,49 @@
         toast.success(
           "Registration successful! Please check your email for verification."
         );
-        // get userID eq email
-        const { data: userData, error: userError } = await data.supabase
-          .from("users")
-          .select("id")
-          .eq("email", formData.email)
-          .single();
+        // // get userID eq email
+        // const { data: userData, error: userError } = await data.supabase
+        //   .from("profiles")
+        //   .select("id")
+        //   .eq("email", formData.email)
+        //   .single();
 
-        if (userError) {
-          toast.error("Failed to retrieve user ID: " + userError.message);
-        }
+        // if (userError) {
+        //   toast.error("Failed to retrieve user ID: " + userError.message);
+        // }
 
-        // upload default avatar
-        const { data: uploadData, error: uploadError } =
-          await data.supabase.storage
-            .from("users-avatars")
-            .upload(`public/${userData.id}/avatar.png`, new Blob(), {
-              upsert: false,
-              cacheControl: "3600",
-              contentType: "image/png",
-            });
+        // // upload default avatar
+        // const { data: uploadData, error: uploadError } =
+        //   await data.supabase.storage
+        //     .from("users-avatars")
+        //     .upload(`public/${userData.id}/avatar.png`, new Blob(), {
+        //       upsert: false,
+        //       cacheControl: "3600",
+        //       contentType: "image/png",
+        //     });
 
-        // get public url of the uploaded avatar
-        const { publicURL, error: urlError } = data.supabase.storage
-          .from("users-avatars")
-          .getPublicUrl(`public/${userData.id}/avatar.png`);
-        if (urlError) {
-          toast.error("Failed to get avatar URL: " + urlError.message);
-        } else {
-          // update user profile with avatar URL
-          const { error: profileError } = await data.supabase
-            .from("users")
-            .update({ avatar_url: publicURL })
-            .eq("id", userData.id);
+        // // get public url of the uploaded avatar
+        // const { publicURL, error: urlError } = data.supabase.storage
+        //   .from("users-avatars")
+        //   .getPublicUrl(`public/${userData.id}/avatar.png`);
+        // if (urlError) {
+        //   toast.error("Failed to get avatar URL: " + urlError.message);
+        // } else {
+        //   // update user profile with avatar URL
+        //   const { error: profileError } = await data.supabase
+        //     .from("profiles")
+        //     .update({ avatar_url: publicURL })
+        //     .eq("id", userData.id);
 
-          if (profileError) {
-            toast.error(
-              "Failed to update profile with avatar URL: " +
-                profileError.message
-            );
-          } else {
-            toast.success("Avatar uploaded and profile updated successfully!");
-          }
-        }
+        //   if (profileError) {
+        //     toast.error(
+        //       "Failed to update profile with avatar URL: " +
+        //         profileError.message
+        //     );
+        //   } else {
+        //     toast.success("Avatar uploaded and profile updated successfully!");
+        //   }
+        // }
       }
     } catch (err) {
       toast.error("Registration failed. Please try again.");

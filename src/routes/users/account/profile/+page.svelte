@@ -26,8 +26,8 @@
   
   // Use actual user data from session or provide defaults
   let userData = {
-    last_name: data.profile?.last_name || '...',
-    first_name: data.profile?.first_name || '...',
+    last_name: data.profile?.last_name || data.session?.user?.user_metadata?.last_name || '...',
+    first_name: data.profile?.first_name || data.session?.user?.user_metadata?.first_name || '...',
     username: data.profile?.username || defaultUsername[0],
     name: data.session?.user?.user_metadata?.full_name || 'User',
     email: data.session?.user?.email || '',

@@ -119,7 +119,7 @@
                     <img
                       class="w-8 h-8 rounded-full object-cover"
                       alt="User avatar"
-                      src={session.user?.user_metadata?.avatar_url || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
+                      src={session.user?.user_metadata?.profile_picture || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
                     />
                   </div>
                   <!-- USER MENU -->

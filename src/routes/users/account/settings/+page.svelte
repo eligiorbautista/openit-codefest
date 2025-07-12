@@ -5,10 +5,23 @@
   export let data;
   
   let showPasswordModal = false;
+   let userEmail  = data.session?.user.email;
+  let defaultUsername = userEmail.split('@');
+  let a  = data.profile?.last_name;
   
   // Use actual user data from session
-  let userEmail = data.session?.user?.email || '';
-  let userName = data.session?.user?.user_metadata?.full_name || data.session?.user?.email?.split('@')[0] || 'user';
+  let userData = {
+    last_name: data.profile?.last_name || data.session?.user?.user_metadata?.last_name || '...',
+    first_name: data.profile?.first_name || data.session?.user?.user_metadata?.first_name || '...',
+    username: data.profile?.username || defaultUsername[0],
+    name: data.session?.user?.user_metadata?.full_name || 'User',
+    email: data.session?.user?.email || '',
+    phone: data.session?.user?.user_metadata?.phone || 'Not provided',
+    joinDate: data.session?.user?.created_at ? new Date(data.session.user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently',
+    address: data.profile?.address || 'kantot street',
+    bio: data.profile?.bio || 'Passionate software developer with expertise in modern web technologies. Enjoys building user-friendly applications and exploring new frameworks. When not coding, loves hiking and photography. Always eager to learn new technologies and contribute to meaningful projects that make a difference.',
+    profilePicture: data.session?.user?.user_metadata?.profile_picture || `https://ui-avatars.com/api/?name=${data.profile.first_name }&background=random&bold=true`
+  };
   
   function openPasswordModal() {
     showPasswordModal = true;
@@ -63,7 +76,7 @@
                 <input 
                   id="username" 
                   type="text" 
-                  value={userName} 
+                  value={userData.first_name} 
                   class="input input-md sm:input-lg bg-gray-50 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-200 focus:-translate-y-1 transition-all duration-200 text-gray-800 font-medium placeholder:text-gray-400" 
                   placeholder="Enter your username"
                 />
