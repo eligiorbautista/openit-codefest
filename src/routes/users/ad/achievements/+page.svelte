@@ -48,6 +48,7 @@
         if (file && file.type.startsWith('image/')) {
         uploading = true;
         try {
+            
             const userId = data.session.user.id;
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}.${fileExt}`;
