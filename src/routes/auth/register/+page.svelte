@@ -28,6 +28,7 @@
     password: "",
     confirmPassword: "",
     teamRole: "member",
+    teamCode: "",
   };
 
   let showPassword = false;
@@ -46,7 +47,16 @@
     } else {
       generatedTeamCode = "";
     }
+    // clear team code when switching roles
+    if (formData.teamRole !== "member") {
+      formData.teamCode = "";
+    }
     previousRole = formData.teamRole;
+  }
+
+  // auto-uppercase team code input
+  $: if (formData.teamCode) {
+    formData.teamCode = formData.teamCode.toUpperCase();
   }
 
   function generateTeamCode() {
@@ -176,6 +186,17 @@
       return;
     }
 
+    // Validate team code format if provided
+    if (
+      formData.teamRole === "member" &&
+      formData.teamCode &&
+      formData.teamCode.trim() &&
+      formData.teamCode.length !== 6
+    ) {
+      toast.error("Team code must be exactly 6 characters");
+      return;
+    }
+
     isLoading = true;
 
     try {
@@ -186,57 +207,107 @@
         finalTeamCode = await generateUniqueTeamCode();
       }
 
-      const { data: signUpData, error: signUpDataError } = await data.supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-      });
-      console.log("Signed UP Auth Data", signUpData.user.id)
+      const { data: signUpData, error: signUpDataError } =
+        await data.supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+        });
+      console.log("Signed UP Auth Data", signUpData.user.id);
 
       if (signUpDataError) {
         toast.error("Registration failed: " + signUpDataError);
       } else {
-
         // Create Account in profiles model
-        const {data: createProfileData, error : createProfileDataError} = await data.supabase
-          .from("profiles")
-          .insert({
-            id: signUpData.user.id,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            role_id:
-              formData.teamRole == "member"
-                ? "d41c0b3c-578e-417d-9842-2d955fa8ec18"
-                : "f8ef63a0-79ce-4fd2-b832-259a45a8fe94",
-          })
-          .select()
-          .single();
-        
-        if(createProfileDataError){
+        const { data: createProfileData, error: createProfileDataError } =
+          await data.supabase
+            .from("profiles")
+            .insert({
+              id: signUpData.user.id,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              role_id:
+                formData.teamRole == "member"
+                  ? "d41c0b3c-578e-417d-9842-2d955fa8ec18"
+                  : "f8ef63a0-79ce-4fd2-b832-259a45a8fe94",
+            })
+            .select()
+            .single();
+
+        if (createProfileDataError) {
           console.log("Error Response: ", createProfileDataError);
           toast.error("Failed to upsert Profile: ", createProfileDataError);
         }
         console.log("Created Profile Response: ", createProfileData);
+
+        // join team if member (only if team code is provided)
+        if (
+          formData.teamRole === "member" &&
+          formData.teamCode &&
+          formData.teamCode.trim()
+        ) {
+          try {
+            console.log(
+              "Attempting to join team with code:",
+              formData.teamCode.toUpperCase()
+            );
+
+            // validate team code exists
+            const { data: teamData, error: teamError } = await data.supabase
+              .from("teams")
+              .select("id, name")
+              .eq("team_code", formData.teamCode.toUpperCase())
+              .single();
+
+            console.log("Team lookup result:", { teamData, teamError });
+
+            if (teamError || !teamData) {
+              console.error("Team not found:", teamError);
+              toast.error("Invalid team code. Please check and try again.");
+              return;
+            }
+
+            // update user profile with team_id
+            const { error: profileError } = await data.supabase
+              .from("profiles")
+              .update({ team_id: teamData.id })
+              .eq("id", createProfileData.id);
+
+            if (profileError) {
+              console.error("Error joining team:", profileError);
+              toast.error(
+                "Account created but failed to join team. Please contact support."
+              );
+            } else {
+              console.log("Successfully joined team:", teamData.name);
+              toast.success(`Successfully joined team: ${teamData.name}`);
+            }
+          } catch (teamErr) {
+            console.error("Team joining error:", teamErr);
+            toast.error(
+              "Account created but failed to join team. Please contact support."
+            );
+          }
+        }
 
         // create team entry if team leader
         if (formData.teamRole === "team_leader" && signUpData.user) {
           try {
             const { data: teamData, error: teamError } = await data.supabase
               .from("teams")
-              .insert(
-                {
-                  name: `${formData.firstName} ${formData.lastName}'s Team`,
-                  team_code: finalTeamCode,
-                }
-              )
+              .insert({
+                name: `${formData.firstName} ${formData.lastName}'s Team`,
+                team_code: finalTeamCode,
+              })
               .select()
               .single();
-            console.log("TEAM DATA: ", teamData)
+            console.log("TEAM DATA: ", teamData);
 
             // update user profile with team_id
-            const { data: updateProfile, error: profileError } = await data.supabase
-              .from("profiles")
-              .update({ team_id: teamData.id })
-              .eq("id", createProfileData.id);
+            const { data: updateProfile, error: profileError } =
+              await data.supabase
+                .from("profiles")
+                .update({ team_id: teamData.id })
+                .eq("id", createProfileData.id);
 
             if (teamError) {
               console.error("Error creating team:", teamError);
@@ -249,7 +320,6 @@
                 "Team created but profile update failed. Please contact support."
               );
             } else {
-
               console.log("Team created successfully:", teamData);
               generatedTeamCode = finalTeamCode;
               showTeamCodeSuccess = true;
@@ -265,6 +335,7 @@
         toast.success(
           "Registration successful! Please check your email for verification."
         );
+        goto("/");
 
         if (formData.teamRole === "team_leader") {
           setTimeout(() => {
@@ -463,6 +534,38 @@
           </div>
         {/if}
 
+        <!-- Team Code Input for Members -->
+        {#if formData.teamRole === "member"}
+          <div class="space-y-2">
+            <label
+              for="teamCode"
+              class="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide"
+            >
+              Team Code
+            </label>
+            <div class="relative">
+              <div
+                class="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none"
+              >
+                <Hash class="w-4 h-4 sm:w-5 sm:h-5 text-svelte-primary" />
+              </div>
+              <input
+                type="text"
+                id="teamCode"
+                bind:value={formData.teamCode}
+                class="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:bg-white focus:border-svelte-primary focus:ring-2 focus:ring-svelte-primary/20 transition-all duration-200 text-sm sm:text-base font-mono"
+                placeholder="Enter team code (optional)"
+                maxlength="6"
+                style="text-transform: uppercase"
+              />
+            </div>
+            <p class="text-xs text-gray-600">
+              Enter the 6-character team code provided by your team leader
+              (optional - you can join a team later).
+            </p>
+          </div>
+        {/if}
+
         <!-- Contact Fields -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <!-- Email Field -->
@@ -489,7 +592,6 @@
               />
             </div>
           </div>
-
         </div>
 
         <!-- Password Fields -->
