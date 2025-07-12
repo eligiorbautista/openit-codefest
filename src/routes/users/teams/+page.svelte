@@ -4,6 +4,35 @@
     import { mockTeams } from "$lib/mockTeams";
     import { mockProjects } from "$lib/mockProjects";
     import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
+
+    export let data;
+
+    let teams = [];
+    let teamId = data.profile.team_id;
+    let userId = data?.session?.user.id;
+    console.log(teamId);
+
+  
+
+    async function fetchTeamByTeamId(){
+        const {data: teamsData, error: teamsError} = await data.supabase
+            .from("teams")
+            .select('*')
+            .eq('id', teamId)
+            .select();
+        
+        if(teamsError){
+            console.log("Team error: ", teamsError);
+        }
+
+        teams = teamsData ?? [];
+        console.log("Teams fetched: ", teams);
+    }
+
+    onMount(() => {
+        fetchTeamByTeamId();
+    })
 
     // Get projects count for each team
     const getProjectsCountForTeam = (teamId) => {
@@ -22,6 +51,9 @@
     const handleCreateProject = () => {
         goto('/users/tl/create-projects');
     };
+
+    
+
 </script>
 
 <svelte:head>
@@ -45,7 +77,7 @@
                         Create Project
                     </button>
                     <div class="bg-white rounded-lg px-3 py-2 border">
-                        <span class="text-sm text-gray-500">Total: {mockTeams.length}</span>
+                        <span class="text-sm text-gray-500">Total: {teams.length}</span>
                     </div>
                 </div>
             </div>
@@ -53,7 +85,7 @@
 
         <!-- Teams Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {#each mockTeams as team}
+            {#each teams as team}
                 <div 
                     class="bg-white rounded-lg border hover:shadow-md transition-shadow cursor-pointer p-4"
                     on:click={() => handleTeamClick(team.id)}
