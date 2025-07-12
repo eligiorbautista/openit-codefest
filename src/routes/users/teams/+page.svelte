@@ -11,7 +11,11 @@
     let teams = [];
     let teamId = data.profile.team_id;
     let userId = data?.session?.user.id;
-    console.log(teamId);
+    let projects = [];
+    let teamProjects = [];
+    let activeProjects = [];
+    let archivedProjects = [];
+    let members = [];
 
   
 
@@ -30,19 +34,51 @@
         console.log("Teams fetched: ", teams);
     }
 
+    async function fetchProjectsByTeamId(team_id){
+        const {data: projectsData, error: projectsError} = await data.supabase
+            .from('projects')
+            .select('*')
+            .eq('team_id', team_id)
+            .select();
+        
+        if(projectsError){
+            console.log("error: ", projectsError);
+        }
+        else{
+
+            projects = projectsData ?? [];
+
+            console.log("Projects fetched: ", projects);
+            teamProjects = projects.filter(obj => obj.team_id == teamId);
+            activeProjects = projects.filter(obj => !obj.is_archived);
+            archivedProjects = projects.filter(obj => obj.is_archived);
+            console.log("active projects: ", activeProjects);
+            console.log("team projects: ", teamProjects);
+            console.log("archived projects: ", archivedProjects);
+        }
+    }
+
+    async function fetchTeamMembers(team_id){
+        const {data: membersData, error: membersDataError} = await data.supabase
+            .from("profiles")
+            .select('*')
+            .eq('team_id', team_id)
+            .select();
+        
+        if(membersDataError){
+            console.log("Member error: ", membersDataError);
+        }
+
+        members = membersData ?? [];
+        console.log("membersData fetched: ", members);
+    }
+
     onMount(() => {
         fetchTeamByTeamId();
+        fetchProjectsByTeamId(teamId);
+        fetchTeamMembers(teamId);
     })
-
-    // Get projects count for each team
-    const getProjectsCountForTeam = (teamId) => {
-        return mockProjects.filter(project => project.team_id === teamId).length;
-    };
-
-    // Get active projects count for each team
-    const getActiveProjectsCountForTeam = (teamId) => {
-        return mockProjects.filter(project => project.team_id === teamId && !project.is_archived).length;
-    };
+    
 
     const handleTeamClick = (teamId) => {
         goto(`/users/teams/${teamId}`);
@@ -114,15 +150,15 @@
                     <!-- Team Stats -->
                     <div class="flex justify-between text-sm">
                         <div>
-                            <span class="font-medium text-gray-900">{team.members_count}</span>
+                            <span class="font-medium text-gray-900">{members.length}</span>
                             <span class="text-gray-500">members</span>
                         </div>
                         <div>
-                            <span class="font-medium text-svelte-primary">{getProjectsCountForTeam(team.id)}</span>
+                            <span class="font-medium text-svelte-primary">{projects.length}</span>
                             <span class="text-gray-500">projects</span>
                         </div>
                         <div>
-                            <span class="font-medium text-green-600">{getActiveProjectsCountForTeam(team.id)}</span>
+                            <span class="font-medium text-green-600">{activeProjects.length}</span>
                             <span class="text-gray-500">active</span>
                         </div>
                     </div>

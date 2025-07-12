@@ -60,12 +60,38 @@
     id: data.profile?.team_id,
     team_code: '',
   }
+
+  let roleData ={
+    id: data.profile?.role_id,
+    name: '',
+  }
   
   onMount(() => {
     if (data.profile?.team_id){
         fetchTeams(data.profile?.team_id);
     }
+    if(data.profile?.role_id){
+        fetchRole(data.profile?.role_id);
+    }
   })
+
+  const fetchRole = async (id) =>{
+    if(id){
+      const { data: rolesData, error: rolesDataError } = await data.supabase
+        .from('roles')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+        console.log("RolesDataFetched: ", rolesData)
+      if(!rolesDataError){
+        roleData.name = rolesData.name;
+      }
+      else{
+        console.log("rolesDataFetchError: ", rolesDataError)
+      }
+    }
+  }
   
   const fetchTeams = async (id) =>{
     if(id){
@@ -373,7 +399,7 @@
             <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
               {userData.first_name} {userData.last_name}
             </h2>
-            <p class="text-gray-600 mb-6">Software Developer</p>
+            <p class="text-gray-600 mb-6">{roleData.name}</p>
 
             <div>
               <button
@@ -407,10 +433,12 @@
               <span class="text-gray-600">Profile Views</span>
               <span class="font-medium text-gray-800">127</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-gray-600">Team Code</span>
-              <span class="font-medium text-gray-800">{teamData.team_code}</span>
-            </div>
+            {#if roleData.name == 'team_leader'}
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600">Team Code</span>
+                <span class="font-medium text-gray-800">{teamData.team_code}</span>
+              </div>
+            {/if}
             <div class="flex items-center justify-between">
               <span class="text-gray-600">User Points</span>
               <span class="font-medium text-gray-800">{userData.current_points || 0}</span>
