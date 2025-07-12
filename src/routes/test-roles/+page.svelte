@@ -1,13 +1,13 @@
 <script>
-  import { getUserRole, hasRole, hasAnyRole, ROLES, canAccessAdmin, canAccessTeamLeader, canAccessMember } from '$lib/auth/roles.js';
+  import { isAdmin, isTeamLeader, isMember, getRoleName } from '$lib/auth/roles.js';
   import { Shield, Crown, User, CheckCircle, XCircle } from 'lucide-svelte';
 
   export let data;
 
-  $: userRole = data.profile ? getUserRole(data.profile) : null;
-  $: canAdmin = data.profile ? canAccessAdmin(data.profile) : false;
-  $: canTL = data.profile ? canAccessTeamLeader(data.profile) : false;
-  $: canMember = data.profile ? canAccessMember(data.profile) : false;
+  $: userRole = data.profile ? getRoleName(data.profile) : null;
+  $: canAdmin = data.profile ? isAdmin(data.profile) : false;
+  $: canTL = data.profile ? isTeamLeader(data.profile) || isAdmin(data.profile) : false;
+  $: canMember = data.profile ? isMember(data.profile) || isTeamLeader(data.profile) || isAdmin(data.profile) : false;
 
   const testResults = [
     { label: 'Admin Routes', access: canAdmin, icon: Shield },
@@ -42,12 +42,12 @@
               <div>
                 <span class="text-gray-600">Role:</span>
                 <span class="font-medium ml-2 px-2 py-1 bg-svelte-100 text-svelte-700 rounded-full text-sm">
-                  {userRole.name}
+                  {userRole}
                 </span>
               </div>
               <div>
                 <span class="text-gray-600">Role ID:</span>
-                <span class="font-mono text-sm ml-2">{userRole.id}</span>
+                <span class="font-mono text-sm ml-2">{data.profile.role_id}</span>
               </div>
             {:else}
               <div>

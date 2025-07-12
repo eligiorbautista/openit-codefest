@@ -1,18 +1,13 @@
 import { redirect } from '@sveltejs/kit';
-import { createAuthCheck, ROLES } from '$lib/auth/roles.js';
+import { isAdmin } from '$lib/auth/roles.js';
 
 export async function load({ parent, url }) {
   const { supabase, session, profile } = await parent();
 
-  // Check if user has admin access
-  const authCheck = createAuthCheck([ROLES.ADMIN]);
-  const authResult = authCheck(profile);
-
-  if (!authResult.authorized) {
-    // Redirect to unauthorized page with reason
+  if (!isAdmin(profile)) {
     const params = new URLSearchParams({
-      reason: authResult.reason,
-      role: ROLES.ADMIN
+      reason: 'Access denied. Admin role required.',
+      role: 'Admin'
     });
     throw redirect(302, `/unauthorized?${params.toString()}`);
   }
@@ -20,7 +15,6 @@ export async function load({ parent, url }) {
   return {
     supabase,
     session,
-    profile,
-    userRole: authResult.role
+    profile
   };
 }

@@ -25,7 +25,7 @@
   import { browser } from "$app/environment";
   import { Toaster, toast } from "svelte-sonner";
   import { goto, invalidateAll } from "$app/navigation";
-  import { getUserRole, hasRole, hasAnyRole, ROLES } from "$lib/auth/roles.js";
+  import { isAdmin, isTeamLeader, isMember, getRoleName } from "$lib/auth/roles.js";
 
   $: if (browser && $page.url.pathname) {
     const drawerToggle = document.getElementById("drawer-toggle");
@@ -36,11 +36,10 @@
   
   let { supabase, session } = data;
 
-  // Get user role information
-  $: userRole = data.profile ? getUserRole(data.profile) : null;
-  $: isAdmin = userRole ? hasRole(data.profile, ROLES.ADMIN) : false;
-  $: isTeamLeader = userRole ? hasRole(data.profile, ROLES.TEAM_LEADER) : false;
-  $: isMember = userRole ? hasRole(data.profile, ROLES.MEMBER) : false;
+  $: userRole = data.profile ? getRoleName(data.profile) : null;
+  $: userIsAdmin = data.profile ? isAdmin(data.profile) : false;
+  $: userIsTeamLeader = data.profile ? isTeamLeader(data.profile) : false;
+  $: userIsMember = data.profile ? isMember(data.profile) : false;
 
   supabase.auth.onAuthStateChange((event, newSession) => {
     if (event === "SIGNED_IN") {
@@ -107,9 +106,9 @@
                 Teams
               </a>
 
-              <!-- Role-based navigation -->
+                            <!-- Role-based navigation -->
               {#if session && userRole}
-                {#if isAdmin}
+                {#if userIsAdmin}
                   <a
                     href="/users/ad"
                     class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
@@ -121,26 +120,26 @@
                   </a>
                 {/if}
                 
-                {#if isTeamLeader || isAdmin}
+                {#if userIsTeamLeader || userIsAdmin}
                   <a
                     href="/users/tl"
-                class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
                       .url.pathname.startsWith('/users/tl')
-                  ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                  : 'pb-1'}"
-              >
+                      ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                      : 'pb-1'}"
+                  >
                     Team Leader
-              </a>
+                  </a>
                 {/if}
                 
-                {#if isMember || isTeamLeader || isAdmin}
-              <a
+                {#if userIsMember || userIsTeamLeader || userIsAdmin}
+                  <a
                     href="/users/me"
-                class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
+                    class="text-gray-600 hover:text-svelte-primary font-medium transition-colors {$page
                       .url.pathname.startsWith('/users/me')
-                  ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
-                  : 'pb-1'}"
-              >
+                      ? 'text-svelte-primary border-b-2 border-svelte-primary pb-1'
+                      : 'pb-1'}"
+                  >
                     My Area
                   </a>
                 {/if}
@@ -161,7 +160,7 @@
                     <img
                       class="w-8 h-8 rounded-full object-cover"
                       alt="User avatar"
-                      src={session.user?.user_metadata?.avatar_url || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
+                      src={session.user?.user_metadata?.profile_picture || "https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/513743490_3202478023244165_5764343989893681401_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGB4_hQkhVilWlmZStkf-Vmd0sTK98BSgZ3SxMr3wFKBiLzStrq0U6wVtGXwbrRD5ygixJvf0VTDQTtYORejIxh&_nc_ohc=xkGtT5NSPAQQ7kNvwFqPQv0&_nc_oc=Adk_VNYN_sFWyxPplUUiQ_rSPJhqcmR_1aVDzdT3r50cTSw8VMSyflzA4t2eSmVL3II&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=7wCcBaQf2FbQfPXOxxjh7g&oh=00_AfRVTxOvHb5oUgfAPVQ0NyeDEd551XQ72_ShYr5dR7j2Zg&oe=6874A28C"}
                     />
                   </div>
                   <!-- USER MENU -->
@@ -172,7 +171,7 @@
                     {#if userRole}
                       <li class="menu-title">
                         <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                          {userRole.name}
+                          {userRole}
                         </span>
                       </li>
                       <li><hr class="my-1 border-svelte-100" /></li>
@@ -364,9 +363,9 @@
               Teams
             </a>
 
-            <!-- Role-based navigation -->
+                        <!-- Role-based navigation -->
             {#if session && userRole}
-              {#if isAdmin}
+              {#if userIsAdmin}
                 <a
                   href="/users/ad"
                   class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
@@ -379,27 +378,27 @@
                 </a>
               {/if}
               
-              {#if isTeamLeader || isAdmin}
+              {#if userIsTeamLeader || userIsAdmin}
                 <a
                   href="/users/tl"
-              class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                  class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
                     .url.pathname.startsWith('/users/tl')
-                ? 'bg-svelte-primary text-white'
-                : 'text-gray-700 hover:bg-svelte-50'}"
-            >
+                    ? 'bg-svelte-primary text-white'
+                    : 'text-gray-700 hover:bg-svelte-50'}"
+                >
                   <Crown class="w-5 h-5" />
                   Team Leader
-            </a>
+                </a>
               {/if}
               
-              {#if isMember || isTeamLeader || isAdmin}
-            <a
+              {#if userIsMember || userIsTeamLeader || userIsAdmin}
+                <a
                   href="/users/me"
-              class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
+                  class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {$page
                     .url.pathname.startsWith('/users/me')
-                ? 'bg-svelte-primary text-white'
-                : 'text-gray-700 hover:bg-svelte-50'}"
-            >
+                    ? 'bg-svelte-primary text-white'
+                    : 'text-gray-700 hover:bg-svelte-50'}"
+                >
                   <User class="w-5 h-5" />
                   My Area
                 </a>

@@ -1,18 +1,14 @@
 import { redirect } from '@sveltejs/kit';
-import { createAuthCheck, ROLES } from '$lib/auth/roles.js';
+import { isTeamLeader, isAdmin } from '$lib/auth/roles.js';
 
 export async function load({ parent, url }) {
   const { supabase, session, profile } = await parent();
 
-  // Check if user has team leader or admin access
-  const authCheck = createAuthCheck([ROLES.TEAM_LEADER, ROLES.ADMIN]);
-  const authResult = authCheck(profile);
-
-  if (!authResult.authorized) {
-    // Redirect to unauthorized page with reason
+  // Check if user is team leader or admin
+  if (!isTeamLeader(profile) && !isAdmin(profile)) {
     const params = new URLSearchParams({
-      reason: authResult.reason,
-      role: `${ROLES.TEAM_LEADER} or ${ROLES.ADMIN}`
+      reason: 'Access denied. Team Leader or Admin role required.',
+      role: 'Team Leader or Admin'
     });
     throw redirect(302, `/unauthorized?${params.toString()}`);
   }
@@ -20,7 +16,6 @@ export async function load({ parent, url }) {
   return {
     supabase,
     session,
-    profile,
-    userRole: authResult.role
+    profile
   };
 } 

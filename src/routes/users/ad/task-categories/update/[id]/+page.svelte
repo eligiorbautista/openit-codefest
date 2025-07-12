@@ -9,7 +9,6 @@
   let isLoading = false;
   let error = null;
 
-  // Form fields
   let name = "";
   let description = "";
   let points_to_give = "";
@@ -33,7 +32,6 @@
       }
 
       taskCategoryDetails = taskCategoryData || {};
-      // Populate form fields with existing data
       name = taskCategoryDetails.name || "";
       description = taskCategoryDetails.description || "";
       points_to_give = taskCategoryDetails.points_to_give || "";

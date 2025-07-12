@@ -11,7 +11,6 @@ export async function load({ parent }) {
     };
   }
 
-  // Fetch profile with role information
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
@@ -35,4 +34,4 @@ export async function load({ parent }) {
     session,
     profile 
   };
-}
+} 
