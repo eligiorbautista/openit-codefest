@@ -19,6 +19,8 @@
     let projectBoards = [];
     let projectCards = [];
     let isCreatingBoard = false;
+    let isUpdatingBoard = false;
+    let currentUpdatingBoardId = '';
     let isLoading = false;
 
     let formData = {
@@ -62,9 +64,11 @@
         if(projectBoardsError){
             console.log("Error fetching boards: ", projectBoardsError);
         }
-
+        console.log("Fetched boards: ", projectBoardsData);
+        projectBoardsData.sort((a, b) => a.created_at - b.created_at)
         projectBoards = projectBoardsData ?? [];
-        console.log("Fetched boards: ", projectBoards);
+        console.log("Sorted boards: ", projectBoards);
+
     }
 
     async function fetchProjectCards(){
@@ -175,6 +179,9 @@
 
     const getCardsForBoard = (boardId) => {
         console.log("Project Cards: ", projectCards);
+        for (let x = 0; x < projectCards.length; x++){
+            console.log(`Looop number ${x}: `, projectCards[x].projectBoards.id == boardId)
+        }
         let result = projectCards.filter(obj => obj.projectBoards?.id == boardId);
         console.log("Get Cards for Boards Result: ", result);
         return result;
@@ -201,6 +208,46 @@
             default: return 'bg-gray-100 text-gray-800';
         }
     };
+
+    const handleUpdateBoardButton = (id, name, description) => {
+      isUpdatingBoard = !isUpdatingBoard;
+      currentUpdatingBoardId = id
+      updateData.name = name;
+      updateData.description = description;
+    }
+
+    const updateData = {
+      name: '',
+      description: '',
+    }
+
+    const handleCancelUpdateButton = async () =>{
+      isUpdatingBoard = false;
+      currentUpdatingBoardId = '';
+      updateData.name = '';
+      updateData.description = '';
+    }
+
+    const submitUpdateBoardButton = async (id) =>{
+      const {data: updateProjectBoards , error: updateProjectBoardsError} = await data.supabase
+        .from('projectBoards')
+        .update({
+            name: updateData.name,
+            description: updateData.description,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if(updateProjectBoardsError){
+          toast.error("Failed to Update achievement: ", updateProjectBoards);
+          return;
+      }
+      await fetchProjectBoards(projectId);
+      console.log("Project Board successfully Updated", updateProjectBoards);
+
+    }
+
 </script>
 
 <svelte:head>
@@ -327,17 +374,53 @@
                 <div class="bg-gray-50 rounded-lg p-4 min-h-[500px]">
                   <!-- Board Header -->
                   <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                      {board.name}
-                    </h3>
-                    <span
+                    {#if currentUpdatingBoardId == board.id}
+                      <input 
+                          id="name"
+                          type="text" 
+                          bind:value={updateData.name}
+                          class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                          placeholder="Enter board name"
+                          required
+                      />
+                    {:else}
+                      <h3 class="text-lg font-semibold text-gray-900">
+                        {board.name}
+                      </h3>
+                    {/if}
+                    <!-- <span
                       class="bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
                     >
                       {getCardsForBoard(board.id).length}
-                    </span>
+                    </span> -->
+                    {#if isUpdatingBoard}
+                      {#if currentUpdatingBoardId == board.id}
+                        <button class="btn btn-primary mb-2" on:click={isUpdatingBoard ? submitUpdateBoardButton(board.id) : handleUpdateBoardButton(board.id)} id="board-button"
+                          >{!isUpdatingBoard ? "Edit" : "Update"}</button
+                        >
+                        <button class="btn btn-warning mb-2" on:click={handleCancelUpdateButton} id="board-button"
+                          >Cancel</button
+                        >
+                      {/if}
+                    {:else}
+                      <button class="btn btn-primary mb-4" on:click={handleUpdateBoardButton(board.id, board.name, board.description)} id="board-button"
+                        >Edit</button
+                      >
+                    {/if}
                   </div>
-
-                  <p class="text-sm text-gray-600 mb-4">{board.description}</p>
+                  
+                  {#if currentUpdatingBoardId == board.id}
+                      <input 
+                          id="description"
+                          type="text" 
+                          bind:value={updateData.description}
+                          class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                          placeholder="Enter Your Description Here..."
+                          required
+                      />
+                  {:else}
+                      <p class="text-sm text-gray-600 mb-4">{board.description}</p>
+                  {/if}
 
                   <!-- Cards Container -->
                   <div class="space-y-3">

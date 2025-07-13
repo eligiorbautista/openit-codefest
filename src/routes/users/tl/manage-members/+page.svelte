@@ -5,10 +5,8 @@
     import { goto } from "$app/navigation"; 
     import { onMount } from "svelte";
 
-    const sampleTeamName = "Sample Name"
 
     // Sample Team ID from mock data = 1
-    const team_id = 1
 
     // Fetch Team ID from session, from the user who is logged in
     // Fetch Members with Team ID
@@ -17,11 +15,43 @@
     // Store members here
     let members = []
 
-    console.log(data?.session?.user);
+    console.log("USER DATA: ", data);
+
+    let sampleTeamName = '';
 
 
-    async function getMembersByTeamId(){
+    async function fetchTeamMembers(team_id){
+        const {data: membersData, error: membersDataError} = await data.supabase
+            .from("profiles")
+            .select('*')
+            .eq('team_id', team_id)
+            .select();
+        
+        if(membersDataError){
+            console.log("Member error: ", membersDataError);
+        }
 
+        members = membersData ?? [];
+        console.log("membersData fetched: ", members);
+        paginate(members);
+    }
+
+    const fetchTeams = async (id) =>{
+        if(id){
+        const { data: teamsData, error: teamsDataError } = await data.supabase
+            .from('teams')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+            console.log("TeamsDataFetch: ", teamsData)
+        if(!teamsDataError){
+            sampleTeamName = teamsData.name;
+        }
+        else{
+            console.log("TeamsDataFetchError: ", teamsDataError)
+        }
+        }
     }
 
     // Pagination by 7
@@ -38,12 +68,11 @@
 
 
     onMount(() => {
-    console.log("Team ID: ", team_id);
-    if (team_id) {
+    console.log("Team ID: ", data.profile?.team_id);
+    if (data.profile?.team_id) {
         // Fetch project data here
-        let result = mockMembers.filter(obj => obj.team_id == team_id);
-        paginate(result);
-        console.log("Team Members:", result)
+        fetchTeamMembers(data.profile?.team_id)
+        fetchTeams(data.profile?.team_id)
     }
     });
 
@@ -74,7 +103,7 @@
 
 <div class="p-8">
     <div>
-        Team {sampleTeamName}
+        <h1>Team {sampleTeamName}</h1>
     </div>
     <div>
         <h1>
