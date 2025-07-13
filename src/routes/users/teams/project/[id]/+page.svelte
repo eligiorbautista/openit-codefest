@@ -1,16 +1,16 @@
 <script>
-    import { PUBLIC_APP_NAME } from "$env/static/public";
-    import { mockProjectBoards } from "$lib/mockProjectBoards";
-    import { mockProjectCards } from "$lib/mockProjectCards";
-    import { mockProjects } from "$lib/mockProjects";
-    import { mockTeams } from "$lib/mockTeams";
-    import { formatDate } from "$lib/helpers/formats";
-    import { page } from '$app/stores';
-    import { goto } from "$app/navigation";
-    import { onMount } from "svelte";
-    import { toast } from "svelte-sonner";
+  import { PUBLIC_APP_NAME } from "$env/static/public";
+  import { mockProjectBoards } from "$lib/mockProjectBoards";
+  import { mockProjectCards } from "$lib/mockProjectCards";
+  import { mockProjects } from "$lib/mockProjects";
+  import { mockTeams } from "$lib/mockTeams";
+  import { formatDate } from "$lib/helpers/formats";
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
-    export let data;
+  export let data;
 
     let projectId;
     let profileId = data.profile?.id;
@@ -22,37 +22,67 @@
     let isUpdatingBoard = false;
     let currentUpdatingBoardId = '';
     let isLoading = false;
+  let projectId;
+  let profileId = data.profile?.id;
+  let teamId = data.profile?.team_id;
+  let currentProject = [];
+  let projectBoards = [];
+  let taskCategories = [];
+  let projectCards = [];
+  let isCreatingBoard = false;
+  let isCreatingCard = false;
+  let creatingCardBoardId = '';
+  let isLoading = false;
 
-    let formData = {
-        name: '',
-        description: '',
-        project_id: '',
+  let formData = {
+    name: "",
+    description: "",
+    task_category_id: "",
+  };
+
+  const boardButton = document.getElementById("board-button");
+
+  function handleBoardButton() {
+    isCreatingBoard = !isCreatingBoard;
+    console.log("IsCreating Board: ", isCreatingBoard);
+  }
+
+  function handleCardButton(board_id) {
+    creatingCardBoardId = board_id;
+    isCreatingCard = !isCreatingCard;
+    console.log("Is creating card", isCreatingCard);
+  }
+
+  async function fetchTaskCategories() {
+    const { data: taskCateogriesData, error: taskCategoriesError } =
+      await data.supabase.from("taskCategories").select("*").select();
+
+    if (taskCategoriesError) {
+      console.log("error fetching task categories", taskCategoriesError);
     }
 
-    const boardButton = document.getElementById('board-button');
+    taskCategories = taskCateogriesData;
 
-    function handleBoardButton()  {
-        isCreatingBoard = !isCreatingBoard;
-        console.log("IsCreating Board: ", isCreatingBoard);
+    console.log("Task Categories Fetched: ", taskCategories);
+  }
+
+  async function fetchProjectDetails() {
+    const { data: projectDetailsData, error: projectDetailsError } =
+      await data.supabase
+        .from("projects")
+        .select("*")
+        .eq("id", projectId)
+        .select()
+        .single();
+
+    if (projectDetailsError) {
+      console.log("error fetching project details", projectDetailsError);
     }
-   
 
-    async function fetchProjectDetails(){
-        const {data: projectDetailsData, error: projectDetailsError} = await data.supabase
-            .from('projects')
-            .select('*')
-            .eq('id', projectId)
-            .select()
-            .single();
-        
-        if(projectDetailsError){
-            console.log('error fetching project details', projectDetailsError);
-        }
+    currentProject = projectDetailsData;
 
-        currentProject = projectDetailsData;
-
-        console.log("Project Details Fetched: ", currentProject);
-    }
+    console.log("Project Details Fetched: ", currentProject);
+  }
 
     async function fetchProjectBoards(project_id){
         const {data: projectBoardsData, error: projectBoardsError} = await data.supabase
@@ -70,11 +100,25 @@
         console.log("Sorted boards: ", projectBoards);
 
     }
+  async function fetchProjectBoards(project_id) {
+    const { data: projectBoardsData, error: projectBoardsError } =
+      await data.supabase
+        .from("projectBoards")
+        .select("*")
+        .eq("project_id", project_id)
+        .select();
 
-    async function fetchProjectCards(){
-        const{data: projectCardsData, error: projectCardsError} = await data.supabase
-            .from('projectCards')
-            .select(`
+    if (projectBoardsError) {
+      console.log("Error fetching boards: ", projectBoardsError);
+    }
+
+    projectBoards = projectBoardsData ?? [];
+    console.log("Fetched boards: ", projectBoards);
+  }
+
+  async function fetchProjectCards() {
+    const { data: projectCardsData, error: projectCardsError } =
+      await data.supabase.from("projectCards").select(`
                 id,
                 name,
                 description,
@@ -91,91 +135,118 @@
                     name,
                     description
                 )
-            `)
+            `);
 
-        if(projectCardsError){
-            console.log("Error fetching boards: ", projectCardsError);
-        }
-
-        projectCards = projectCardsData ?? [];
-        console.log("Fetched cards: ", projectCards);
+    if (projectCardsError) {
+      console.log("Error fetching boards: ", projectCardsError);
     }
 
-    async function createProjectBoard(){
-        isLoading = true;
-        try{
-            const{data: createBoardData, error: createBoardError} = await data.supabase
-            .from('projectBoards')
-            .insert({
-                name: formData.name,
-                description:formData.description,
-                project_id: projectId
-            })
-            .select()
-            .single();
+    projectCards = projectCardsData ?? [];
+    console.log("Fetched cards: ", projectCards);
+  }
 
-            if(createBoardError){
-                console.log('Error creating board', createBoardError);
-                toast.error('Error in creaing board');
-            }
-            toast.success('board created successfully');
-            isCreatingBoard = false
-            await fetchProjectBoards(projectId);
+  async function createProjectBoard() {
+    isLoading = true;
+    try {
+      const { data: createBoardData, error: createBoardError } =
+        await data.supabase
+          .from("projectBoards")
+          .insert({
+            name: formData.name,
+            description: formData.description,
+            project_id: projectId,
+          })
+          .select()
+          .single();
+
+      if (createBoardError) {
+        console.log("Error creating board", createBoardError);
+        toast.error("Error in creaing board");
+      }
+      toast.success("board created successfully");
+      isCreatingBoard = false;
+      await fetchProjectBoards(projectId);
+    } catch (error) {
+      console.log("Error creating data: ", error);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function createProjectCard(board_id) {
+    isLoading = true;
+
+    const { data: createCardData, error: createCardError } = await data.supabase
+      .from("projectCards")
+      .insert(
+        {
+          name: formData.name,
+          description: formData.description,
+          project_id: projectId,
+          project_board_id: board_id,
+          task_Categories_id: formData.task_category_id,
+          profile_id: profileId,
+          updated_by: profileId,
         }
-        catch(error){
-            console.log("Error creating data: ", error);
-        }
-        finally{
-            isLoading = false;
-        }
+      )
+      .select()
+      .single();
+
+    if (createCardError) {
+      console.log(createCardError);
+      toast.error("Error creating card");
     }
 
-    async function approveCard(card_id, points){
-        const{data: approveCardData, error: approveCardError} = await data.supabase
-            .from('projectCards')
-            .update({
-                is_approved : true
-            })
-            .eq('id', card_id)
-            .single();
+    toast.success("card created successfully");
 
-        if(approveCardError){
-            console.log('error approving card: ', approveCardError)
-        }
-        toast.success("Task approved");
+    await fetchProjectCards();
+  }
 
-        const {data: addPointData, error: addPointError} = await data.supabase
-                .from('profiles')
-                .update({
-                    current_points : points
-                })
-                .eq('id', profileId)
-                .select()
-                .single()
+  async function approveCard(card_id, points) {
+    const { data: approveCardData, error: approveCardError } =
+      await data.supabase
+        .from("projectCards")
+        .update({
+          is_approved: true,
+        })
+        .eq("id", card_id)
+        .single();
 
-            if(addPointError){
-                console.log("Error adding points", addPointError);
-            }
-            console.log("Added points: ", points);
-            toast.success("Points added yipee");
+    if (approveCardError) {
+      console.log("error approving card: ", approveCardError);
     }
-    
+    toast.success("Task approved");
 
-    onMount(() => {
-        projectId = $page.params.id;
-        console.log("Project ID:", projectId);
+    const { data: addPointData, error: addPointError } = await data.supabase
+      .from("profiles")
+      .update({
+        current_points: points,
+      })
+      .eq("id", profileId)
+      .select()
+      .single();
 
-        fetchProjectBoards(projectId);
+    if (addPointError) {
+      console.log("Error adding points", addPointError);
+    }
+    console.log("Added points: ", points);
+    toast.success("Points added yipee");
+  }
 
-        fetchProjectCards()
+  onMount(() => {
+    projectId = $page.params.id;
+    console.log("Project ID:", projectId);
 
+    fetchTaskCategories();
 
-        fetchProjectDetails();
+    fetchProjectBoards(projectId);
 
-        // fetchProjectCards();
+    fetchProjectCards();
 
+    fetchProjectDetails();
 
-    });
+    // fetchProjectCards();
+  });
 
     const getCardsForBoard = (boardId) => {
         console.log("Project Cards: ", projectCards);
@@ -186,19 +257,29 @@
         console.log("Get Cards for Boards Result: ", result);
         return result;
     };
+  const getCardsForBoard = (boardId) => {
+    console.log("Project Cards: ", projectCards);
+    let result = projectCards.filter((obj) => obj.projectBoards?.id == boardId);
+    console.log("Get Cards for Boards Result: ", result);
+    return result;
+  };
 
-    const goBack = () => {
-            goto('/users/teams');
-    };
+  const goBack = () => {
+    goto("/users/teams");
+  };
 
-    const getStatusColor = (status) => {
-        switch(status) {
-            case 'todo': return 'bg-gray-100 text-gray-800';
-            case 'in-progress': return 'bg-blue-100 text-blue-800';
-            case 'done': return 'bg-green-100 text-green-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "todo":
+        return "bg-gray-100 text-gray-800";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800";
+      case "done":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
     const getPriorityColor = (priority) => {
         switch(priority) {
@@ -248,6 +329,18 @@
 
     }
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 </script>
 
 <svelte:head>
@@ -362,7 +455,10 @@
           <h2 class="text-xl font-semibold text-gray-900 mb-6">
             Project Boards
           </h2>
-          <button class="btn btn-primary mb-4" on:click={handleBoardButton} id="board-button"
+          <button
+            class="btn btn-primary mb-4"
+            on:click={handleBoardButton}
+            id="board-button"
             >{!isCreatingBoard ? "Create Board" : "Cancel Creating"}</button
           >
 
@@ -437,7 +533,11 @@
                               {card.name}
                             </h4>
                             <button
-                              on:click={() => approveCard(card.id, card.taskCategories?.points_to_give)}
+                              on:click={() =>
+                                approveCard(
+                                  card.id,
+                                  card.taskCategories?.points_to_give
+                                )}
                             >
                               Approve
                             </button>
@@ -471,7 +571,7 @@
                               <span
                                 class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                               >
-                                Category {card.taskCategories?.name} 
+                                Category {card.taskCategories?.name}
                               </span>
                             </div>
 
@@ -487,6 +587,69 @@
                         </div>
                       {/if}
                     {/each}
+                    {#if isCreatingCard}
+                      {#if creatingCardBoardId == board.id}
+                       <form on:submit={createProjectCard(board.id)}>
+                        <div
+                          class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <!-- Card Header -->
+                          <div class="flex items-start justify-between mb-3">
+                            <input
+                              id="name"
+                              type="text"
+                              bind:value={formData.name}
+                              class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                              placeholder="Enter card name"
+                              required
+                            />
+                          </div>
+
+                          <!-- Card Description -->
+                          <input
+                              id="description"
+                              type="text"
+                              bind:value={formData.description}
+                              class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                              placeholder="Enter card description"
+                              required
+                          />
+
+                          <!-- Card Footer -->
+                          <div class="flex items-center justify-between">
+                            <div>
+                              <label
+                                class="block font-semibold mb-1 text-gray-700"
+                                for="task-category">Task Category</label
+                              >
+                              <select
+                                id="task-category"
+                                class="select select-bordered w-full text-gray-900 bg-white"
+                                bind:value={formData.task_category_id}
+                                required
+                              >
+                                <option value="" disabled selected
+                                  >Select category</option
+                                >
+                                {#each taskCategories.filter((c) => c.id !== 0) as cat}
+                                  <option value={cat.id}>{cat.name}</option>
+                                {/each}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button 
+                              class="btn btn-primary" 
+                              type="submit"
+                              disabled={isLoading}
+                          >
+                              Create
+                          </button>
+                      </form>
+                      {/if}
+                     
+                    {/if}
 
                     <!-- Empty State for Board -->
                     {#if getCardsForBoard(board.id).length === 0}
@@ -511,6 +674,7 @@
                         <p class="text-sm text-gray-500 mb-3">No cards yet</p>
                         <button
                           class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          on:click={handleCardButton}
                         >
                           Add a card
                         </button>
@@ -520,6 +684,7 @@
                     <!-- Add Card Button -->
                     <button
                       class="w-full bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-sm text-gray-600 font-medium transition-colors"
+                      on:click={() => handleCardButton(board.id)}
                     >
                       + Add a card
                     </button>
@@ -527,27 +692,27 @@
                 </div>
               {/each}
               {#if isCreatingBoard}
-                <form on:submit={createProjectBoard}>
-                     <div class="bg-gray-50 rounded-lg p-4 min-h-[500px]">
+                <form on:submit={createProjectBoard(board.id)}>
+                  <div class="bg-gray-50 rounded-lg p-4 min-h-[500px]">
                     <!-- Board Header -->
                     <div class="flex items-center justify-between mb-4">
-                        <input 
-                            id="name"
-                            type="text" 
-                            bind:value={formData.name}
-                            class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                            placeholder="Enter board name"
-                            required
-                        />
+                      <input
+                        id="name"
+                        type="text"
+                        bind:value={formData.name}
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                        placeholder="Enter board name"
+                        required
+                      />
                     </div>
 
-                    <input 
-                            id="description"
-                            type="text" 
-                            bind:value={formData.description}
-                            class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                            placeholder="Enter board description"
-                            required
+                    <input
+                      id="description"
+                      type="text"
+                      bind:value={formData.description}
+                      class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                      placeholder="Enter board description"
+                      required
                     />
 
                     <div class="space-y-3 pt-5">
@@ -557,13 +722,12 @@
                         class="w-full bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-sm text-gray-600 font-medium transition-colors"
                         disabled={isLoading}
                       >
-                        
                         + Add Board
                       </button>
                     </div>
                   </div>
                 </form>
-                {/if}
+              {/if}
             </div>
           {:else}
             <!-- Empty State for Project -->
