@@ -12,27 +12,21 @@
 
   export let data;
 
-    let projectId;
-    let profileId = data.profile?.id;
-    let teamId = data.profile?.team_id;
-    let currentProject = [];
-    let projectBoards = [];
-    let projectCards = [];
-    let isCreatingBoard = false;
-    let isUpdatingBoard = false;
-    let currentUpdatingBoardId = '';
-    let isLoading = false;
   let projectId;
   let profileId = data.profile?.id;
   let teamId = data.profile?.team_id;
   let currentProject = [];
   let projectBoards = [];
-  let taskCategories = [];
   let projectCards = [];
   let isCreatingBoard = false;
+  let isUpdatingBoard = false;
+  let currentUpdatingBoardId = "";
+  let isLoading = false;
+
+
+  let taskCategories = [];
   let isCreatingCard = false;
   let creatingCardBoardId = '';
-  let isLoading = false;
 
   let formData = {
     name: "",
@@ -84,22 +78,7 @@
     console.log("Project Details Fetched: ", currentProject);
   }
 
-    async function fetchProjectBoards(project_id){
-        const {data: projectBoardsData, error: projectBoardsError} = await data.supabase
-            .from('projectBoards')
-            .select('*')
-            .eq('project_id', project_id)
-            .select();
-        
-        if(projectBoardsError){
-            console.log("Error fetching boards: ", projectBoardsError);
-        }
-        console.log("Fetched boards: ", projectBoardsData);
-        projectBoardsData.sort((a, b) => a.created_at - b.created_at)
-        projectBoards = projectBoardsData ?? [];
-        console.log("Sorted boards: ", projectBoards);
 
-    }
   async function fetchProjectBoards(project_id) {
     const { data: projectBoardsData, error: projectBoardsError } =
       await data.supabase
@@ -178,17 +157,15 @@
 
     const { data: createCardData, error: createCardError } = await data.supabase
       .from("projectCards")
-      .insert(
-        {
-          name: formData.name,
-          description: formData.description,
-          project_id: projectId,
-          project_board_id: board_id,
-          task_Categories_id: formData.task_category_id,
-          profile_id: profileId,
-          updated_by: profileId,
-        }
-      )
+      .insert({
+        name: formData.name,
+        description: formData.description,
+        project_id: projectId,
+        project_board_id: board_id,
+        task_Categories_id: formData.task_category_id,
+        profile_id: profileId,
+        updated_by: profileId,
+      })
       .select()
       .single();
 
@@ -196,7 +173,7 @@
       console.log(createCardError);
       toast.error("Error creating card");
     }
-
+    isCreatingCard = false;
     toast.success("card created successfully");
 
     await fetchProjectCards();
@@ -248,15 +225,6 @@
     // fetchProjectCards();
   });
 
-    const getCardsForBoard = (boardId) => {
-        console.log("Project Cards: ", projectCards);
-        for (let x = 0; x < projectCards.length; x++){
-            console.log(`Looop number ${x}: `, projectCards[x].projectBoards.id == boardId)
-        }
-        let result = projectCards.filter(obj => obj.projectBoards?.id == boardId);
-        console.log("Get Cards for Boards Result: ", result);
-        return result;
-    };
   const getCardsForBoard = (boardId) => {
     console.log("Project Cards: ", projectCards);
     let result = projectCards.filter((obj) => obj.projectBoards?.id == boardId);
@@ -281,53 +249,45 @@
     }
   };
 
-    const getPriorityColor = (priority) => {
-        switch(priority) {
-            case 'high': return 'bg-red-100 text-red-800';
-            case 'medium': return 'bg-yellow-100 text-yellow-800';
-            case 'low': return 'bg-green-100 text-green-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
 
-    const handleUpdateBoardButton = (id, name, description) => {
-      isUpdatingBoard = !isUpdatingBoard;
-      currentUpdatingBoardId = id
-      updateData.name = name;
-      updateData.description = description;
-    }
+  const handleUpdateBoardButton = (id, name, description) => {
+    isUpdatingBoard = !isUpdatingBoard;
+    currentUpdatingBoardId = id;
+    updateData.name = name;
+    updateData.description = description;
+  };
 
-    const updateData = {
-      name: '',
-      description: '',
-    }
+  const updateData = {
+    name: "",
+    description: "",
+  };
 
-    const handleCancelUpdateButton = async () =>{
-      isUpdatingBoard = false;
-      currentUpdatingBoardId = '';
-      updateData.name = '';
-      updateData.description = '';
-    }
+  const handleCancelUpdateButton = async () => {
+    isUpdatingBoard = false;
+    currentUpdatingBoardId = "";
+    updateData.name = "";
+    updateData.description = "";
+  };
 
-    const submitUpdateBoardButton = async (id) =>{
-      const {data: updateProjectBoards , error: updateProjectBoardsError} = await data.supabase
-        .from('projectBoards')
+  const submitUpdateBoardButton = async (id) => {
+    const { data: updateProjectBoards, error: updateProjectBoardsError } =
+      await data.supabase
+        .from("projectBoards")
         .update({
-            name: updateData.name,
-            description: updateData.description,
+          name: updateData.name,
+          description: updateData.description,
         })
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
-      
-      if(updateProjectBoardsError){
-          toast.error("Failed to Update achievement: ", updateProjectBoards);
-          return;
-      }
-      await fetchProjectBoards(projectId);
-      console.log("Project Board successfully Updated", updateProjectBoards);
 
+    if (updateProjectBoardsError) {
+      toast.error("Failed to Update achievement: ", updateProjectBoards);
+      return;
     }
+    await fetchProjectBoards(projectId);
+    console.log("Project Board successfully Updated", updateProjectBoards);
+  };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -471,13 +431,13 @@
                   <!-- Board Header -->
                   <div class="flex items-center justify-between mb-4">
                     {#if currentUpdatingBoardId == board.id}
-                      <input 
-                          id="name"
-                          type="text" 
-                          bind:value={updateData.name}
-                          class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                          placeholder="Enter board name"
-                          required
+                      <input
+                        id="name"
+                        type="text"
+                        bind:value={updateData.name}
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                        placeholder="Enter board name"
+                        required
                       />
                     {:else}
                       <h3 class="text-lg font-semibold text-gray-900">
@@ -491,31 +451,46 @@
                     </span> -->
                     {#if isUpdatingBoard}
                       {#if currentUpdatingBoardId == board.id}
-                        <button class="btn btn-primary mb-2" on:click={isUpdatingBoard ? submitUpdateBoardButton(board.id) : handleUpdateBoardButton(board.id)} id="board-button"
+                        <button
+                          class="btn btn-primary mb-2"
+                          on:click={isUpdatingBoard
+                            ? submitUpdateBoardButton(board.id)
+                            : handleUpdateBoardButton(board.id)}
+                          id="board-button"
                           >{!isUpdatingBoard ? "Edit" : "Update"}</button
                         >
-                        <button class="btn btn-warning mb-2" on:click={handleCancelUpdateButton} id="board-button"
-                          >Cancel</button
+                        <button
+                          class="btn btn-warning mb-2"
+                          on:click={handleCancelUpdateButton}
+                          id="board-button">Cancel</button
                         >
                       {/if}
                     {:else}
-                      <button class="btn btn-primary mb-4" on:click={handleUpdateBoardButton(board.id, board.name, board.description)} id="board-button"
-                        >Edit</button
+                      <button
+                        class="btn btn-primary mb-4"
+                        on:click={handleUpdateBoardButton(
+                          board.id,
+                          board.name,
+                          board.description
+                        )}
+                        id="board-button">Edit</button
                       >
                     {/if}
                   </div>
-                  
+
                   {#if currentUpdatingBoardId == board.id}
-                      <input 
-                          id="description"
-                          type="text" 
-                          bind:value={updateData.description}
-                          class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                          placeholder="Enter Your Description Here..."
-                          required
-                      />
+                    <input
+                      id="description"
+                      type="text"
+                      bind:value={updateData.description}
+                      class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                      placeholder="Enter Your Description Here..."
+                      required
+                    />
                   {:else}
-                      <p class="text-sm text-gray-600 mb-4">{board.description}</p>
+                    <p class="text-sm text-gray-600 mb-4">
+                      {board.description}
+                    </p>
                   {/if}
 
                   <!-- Cards Container -->
@@ -589,66 +564,65 @@
                     {/each}
                     {#if isCreatingCard}
                       {#if creatingCardBoardId == board.id}
-                       <form on:submit={createProjectCard(board.id)}>
-                        <div
-                          class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                        >
-                          <!-- Card Header -->
-                          <div class="flex items-start justify-between mb-3">
-                            <input
-                              id="name"
-                              type="text"
-                              bind:value={formData.name}
-                              class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                              placeholder="Enter card name"
-                              required
-                            />
-                          </div>
+                        <form on:submit={createProjectCard(board.id)}>
+                          <div
+                            class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                          >
+                            <!-- Card Header -->
+                            <div class="flex items-start justify-between mb-3">
+                              <input
+                                id="name"
+                                type="text"
+                                bind:value={formData.name}
+                                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                                placeholder="Enter card name"
+                                required
+                              />
+                            </div>
 
-                          <!-- Card Description -->
-                          <input
+                            <!-- Card Description -->
+                            <input
                               id="description"
                               type="text"
                               bind:value={formData.description}
                               class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                               placeholder="Enter card description"
                               required
-                          />
+                            />
 
-                          <!-- Card Footer -->
-                          <div class="flex items-center justify-between">
-                            <div>
-                              <label
-                                class="block font-semibold mb-1 text-gray-700"
-                                for="task-category">Task Category</label
-                              >
-                              <select
-                                id="task-category"
-                                class="select select-bordered w-full text-gray-900 bg-white"
-                                bind:value={formData.task_category_id}
-                                required
-                              >
-                                <option value="" disabled selected
-                                  >Select category</option
+                            <!-- Card Footer -->
+                            <div class="flex items-center justify-between">
+                              <div>
+                                <label
+                                  class="block font-semibold mb-1 text-gray-700"
+                                  for="task-category">Task Category</label
                                 >
-                                {#each taskCategories.filter((c) => c.id !== 0) as cat}
-                                  <option value={cat.id}>{cat.name}</option>
-                                {/each}
-                              </select>
+                                <select
+                                  id="task-category"
+                                  class="select select-bordered w-full text-gray-900 bg-white"
+                                  bind:value={formData.task_category_id}
+                                  required
+                                >
+                                  <option value="" disabled selected
+                                    >Select category</option
+                                  >
+                                  {#each taskCategories.filter((c) => c.id !== 0) as cat}
+                                    <option value={cat.id}>{cat.name}</option>
+                                  {/each}
+                                </select>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <button 
-                              class="btn btn-primary" 
-                              type="submit"
-                              disabled={isLoading}
+                          <button
+                            class="btn btn-primary"
+                            type="submit"
+                            disabled={isLoading}
                           >
-                              Create
+                            Create
                           </button>
-                      </form>
+                        </form>
                       {/if}
-                     
                     {/if}
 
                     <!-- Empty State for Board -->
